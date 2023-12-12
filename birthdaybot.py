@@ -8,18 +8,32 @@ from icalendar import Calendar
 
 def download_ics(ics_url):
     """
-    Downloads the ICS file from the given URL.
+    Downloads the ICS file from the given URL and validates if it is an ICS file.
 
     Args:
     ics_url (str): URL of the ICS file to be downloaded.
 
     Returns:
     bytes: Content of the ICS file.
+
+    Raises:
+    ValueError: If the file is not in ICS format.
     """
     print(f"Downloading ICS file from {ics_url}")
     response = requests.get(ics_url)
     response.raise_for_status()
-    return response.content
+
+    # Check if the Content-Type is for ICS files
+    content_type = response.headers.get('Content-Type', '')
+    if 'text/calendar' not in content_type:
+        raise ValueError("Downloaded file is not an ICS file based on Content-Type header.")
+
+    content = response.content
+    # Check if the file content begins with 'BEGIN:VCALENDAR'
+    if not content.startswith(b"BEGIN:VCALENDAR"):
+        raise ValueError("Downloaded file does not appear to be an ICS file based on its content.")
+
+    return content
 
 def get_events_for_date(ics_content, target_date):
     """
