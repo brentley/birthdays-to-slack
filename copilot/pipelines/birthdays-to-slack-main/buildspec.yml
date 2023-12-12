@@ -1,5 +1,8 @@
 # Buildspec runs in the build stage of your pipeline.
 version: 0.2
+env:
+  secrets-manager:
+    ICS_URL: "arn:aws:ssm:::parameter/copilot/happy-birthday-slackbot/production/secrets/ICS_URL"
 phases:
   install:
     commands:
