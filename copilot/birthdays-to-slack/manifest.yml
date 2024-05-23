@@ -31,6 +31,9 @@ platform: linux/x86_64   # See https://aws.github.io/copilot-cli/docs/manifest/s
 #
 #variables:                    # Pass environment variables as key value pairs.
 #  LOG_LEVEL: info
+variables:
+  LDAP_SERVER: 'ldaps://ldap.google.com'
+  SEARCH_BASE: 'ou=Users,dc=visiquate,dc=com'
 
 #secrets:                      # Pass secrets from AWS Systems Manager (SSM) Parameter Store.
 #  GITHUB_TOKEN: GITHUB_TOKEN  # The key is the name of the environment variable, the value is the name of the SSM parameter.
