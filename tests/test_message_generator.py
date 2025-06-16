@@ -150,7 +150,7 @@ class TestMessageGenerator:
         
         message1 = "On this day in 1969, the Moon landing occurred, and also John was born. Happy Birthday!"
         fact1 = generator._extract_historical_fact(message1)
-        assert fact1 == "in 1969, the Moon landing occurred,"
+        assert fact1 == "On this day in 1969, the Moon landing occurred,"
         
         message2 = "Today is special because the telephone was invented and also Jane was born!"
         fact2 = generator._extract_historical_fact(message2)

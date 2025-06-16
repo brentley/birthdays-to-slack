@@ -65,7 +65,9 @@ class TestFlaskApp:
     @patch.dict(os.environ, {'SLACK_NOTIFICATIONS_ENABLED': 'true'})
     def test_api_status_slack_enabled(self, client):
         """Test status API with Slack notifications enabled."""
-        with patch('birthday_bot.app.birthday_service', Mock()):
+        mock_service = Mock()
+        mock_service.get_service_status.return_value = {}
+        with patch('birthday_bot.app.birthday_service', mock_service):
             with patch('birthday_bot.app.birthday_cache', {}):
                 response = client.get('/api/status')
         
