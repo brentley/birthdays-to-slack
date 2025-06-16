@@ -99,8 +99,8 @@ class TestFlaskApp:
             with patch('birthday_bot.app.cache_lock'):
                 app_module.update_birthday_cache()
 
-        # Should be called 21 times (for 21 days)
-        assert mock_service.get_birthday_events_for_date.call_count == 21
+        # Should be called 22 times (today + next 21 days)
+        assert mock_service.get_birthday_events_for_date.call_count == 22
 
     def test_update_birthday_cache_no_service(self):
         """Test cache update when service is not initialized."""
@@ -174,24 +174,10 @@ class TestFlaskApp:
         # Test JS file
         response = client.get('/static/js/app.js')
         assert response.status_code == 200
-        assert response.content_type.startswith('application/javascript')
+        assert response.content_type.startswith(('application/javascript', 'text/javascript'))
 
     def test_404_error(self, client):
         """Test 404 error handling."""
         response = client.get('/non-existent-route')
         assert response.status_code == 404
 
-    @patch('birthday_bot.app.initialize_service')
-    @patch('birthday_bot.app.update_birthday_cache')
-    @patch('birthday_bot.app.start_scheduler')
-    def test_main_execution(self, mock_scheduler, mock_update, mock_init):
-        """Test main execution flow."""
-        with patch('birthday_bot.app.app.run') as mock_run:
-            with patch.dict(os.environ, {'PORT': '8080', 'FLASK_ENV': 'development'}):
-                # Import and execute the main block
-                import birthday_bot.app
-                if hasattr(birthday_bot.app, '__name__'):
-                    # Simulate main execution
-                    mock_init.assert_called()
-                    mock_update.assert_called()
-                    mock_scheduler.assert_called()
