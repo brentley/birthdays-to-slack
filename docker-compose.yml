@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5002:5000"
     environment:
       - LDAP_SERVER=ldaps://ldap.google.com
       - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
