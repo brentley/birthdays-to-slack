@@ -1,5 +1,6 @@
 """Tests for the birthday service module."""
 
+import os
 import pytest
 from datetime import date
 from unittest.mock import Mock, patch, MagicMock
