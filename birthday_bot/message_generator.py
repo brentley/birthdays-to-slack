@@ -31,42 +31,93 @@ The message should be:
 - About 2-3 sentences total
 - Ready to post directly to Slack"""
 
-    def __init__(self, openai_api_key: str, data_dir: str = "data"):
+    def __init__(self, openai_api_key: str, data_dir: str = "data", prompts_dir: str = "prompts"):
         """Initialize the message generator.
         
         Args:
             openai_api_key: OpenAI API key
-            data_dir: Directory to store prompts and message history
+            data_dir: Directory to store data files
+            prompts_dir: Directory containing prompt templates
         """
         self.client = openai.OpenAI(api_key=openai_api_key)
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
         
+        self.prompts_dir = Path(prompts_dir)
+        self.prompts_dir.mkdir(exist_ok=True)
+        (self.prompts_dir / "history").mkdir(exist_ok=True)
+        
         # File paths
-        self.prompt_file = self.data_dir / "birthday_prompt.txt"
+        self.default_prompt_file = self.prompts_dir / "default.txt"
+        self.current_prompt_file = self.data_dir / "current_prompt.txt"
+        self.prompt_history_file = self.data_dir / "prompt_history.json"
         self.history_file = self.data_dir / "birthday_history.json"
         self.messages_file = self.data_dir / "generated_messages.json"
         
-        # Load or create prompt template
+        # Load prompt template and history
         self.prompt_template = self._load_prompt_template()
+        self.prompt_history = self._load_prompt_history()
         
         # Load message history
         self.history = self._load_history()
         self.generated_messages = self._load_generated_messages()
 
     def _load_prompt_template(self) -> str:
-        """Load prompt template from file or use default."""
-        if self.prompt_file.exists():
-            return self.prompt_file.read_text().strip()
-        else:
-            # Save default template
-            self.prompt_file.write_text(self.DEFAULT_PROMPT_TEMPLATE)
-            return self.DEFAULT_PROMPT_TEMPLATE
+        """Load prompt template from current or default file."""
+        # Check if there's a current active prompt
+        if self.current_prompt_file.exists():
+            return self.current_prompt_file.read_text().strip()
+        
+        # Fall back to default prompt from git-controlled file
+        if self.default_prompt_file.exists():
+            template = self.default_prompt_file.read_text().strip()
+            # Copy default to current for editing
+            self.current_prompt_file.write_text(template)
+            return template
+        
+        # Last resort: use hardcoded default
+        self.current_prompt_file.write_text(self.DEFAULT_PROMPT_TEMPLATE)
+        return self.DEFAULT_PROMPT_TEMPLATE
 
-    def _save_prompt_template(self, template: str):
-        """Save prompt template to file."""
-        self.prompt_file.write_text(template)
+    def _load_prompt_history(self) -> List[Dict[str, Any]]:
+        """Load prompt history from file."""
+        if self.prompt_history_file.exists():
+            with open(self.prompt_history_file, 'r') as f:
+                return json.load(f)
+        return []
+
+    def _save_prompt_history(self):
+        """Save prompt history to file."""
+        with open(self.prompt_history_file, 'w') as f:
+            json.dump(self.prompt_history, f, indent=2)
+
+    def _save_prompt_template(self, template: str, description: str = ""):
+        """Save prompt template and add to history."""
+        from datetime import datetime
+        
+        # Add current template to history before changing
+        if hasattr(self, 'prompt_template') and self.prompt_template != template:
+            history_entry = {
+                "id": len(self.prompt_history) + 1,
+                "template": self.prompt_template,
+                "description": description or "Previous version",
+                "created_at": datetime.utcnow().isoformat(),
+                "active": False
+            }
+            self.prompt_history.append(history_entry)
+            
+            # Save to history file
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            history_filename = f"prompt_{timestamp}.txt"
+            history_file_path = self.prompts_dir / "history" / history_filename
+            history_file_path.write_text(self.prompt_template)
+        
+        # Save new template
+        self.current_prompt_file.write_text(template)
         self.prompt_template = template
+        
+        # Save history
+        self._save_prompt_history()
 
     def _load_history(self) -> Dict[str, List[str]]:
         """Load birthday fact history from file."""
@@ -96,17 +147,42 @@ The message should be:
         """Save generated messages to file."""
         self.messages_file.write_text(json.dumps(self.generated_messages, indent=2))
 
-    def update_prompt_template(self, new_template: str):
+    def update_prompt_template(self, new_template: str, description: str = ""):
         """Update the prompt template.
         
         Args:
             new_template: New prompt template with {employee_name} and {birthday_date} placeholders
+            description: Description of the change
         """
         if "{employee_name}" not in new_template or "{birthday_date}" not in new_template:
             raise ValueError("Template must contain {employee_name} and {birthday_date} placeholders")
         
-        self._save_prompt_template(new_template)
-        logger.info("Updated birthday prompt template")
+        self._save_prompt_template(new_template, description)
+
+    def get_prompt_history(self) -> List[Dict[str, Any]]:
+        """Get the prompt history."""
+        # Add current template as the first entry
+        current_entry = {
+            "id": "current",
+            "template": self.prompt_template,
+            "description": "Current active template",
+            "created_at": "current",
+            "active": True
+        }
+        return [current_entry] + self.prompt_history
+
+    def activate_prompt_from_history(self, prompt_id: str) -> bool:
+        """Activate a prompt from history."""
+        if prompt_id == "current":
+            return True  # Already active
+        
+        # Find the prompt in history
+        for entry in self.prompt_history:
+            if str(entry["id"]) == str(prompt_id):
+                self._save_prompt_template(entry["template"], f"Reactivated: {entry['description']}")
+                return True
+        
+        return False
 
     def _extract_historical_fact(self, message: str) -> Optional[str]:
         """Extract the historical fact from a generated message."""

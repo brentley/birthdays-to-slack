@@ -12,6 +12,9 @@
                 <button class="btn btn-sm btn-outline-primary me-2" id="editPromptBtn" style="display:none;" onclick="showPromptModal()">
                     <i class="bi bi-pencil"></i> Edit Prompt
                 </button>
+                <button class="btn btn-sm btn-outline-info me-2" id="historyPromptBtn" style="display:none;" onclick="showPromptHistory()">
+                    <i class="bi bi-clock-history"></i> History
+                </button>
                 <small class="text-muted" id="last-updated">Loading...</small>
             </div>
         </div>
@@ -160,6 +163,10 @@
                     This template is used to generate birthday messages. Use <code>{employee_name}</code> and <code>{birthday_date}</code> as placeholders.
                 </div>
                 <div class="mb-3">
+                    <label for="promptDescription" class="form-label">Description (optional):</label>
+                    <input type="text" class="form-control" id="promptDescription" placeholder="Brief description of this change...">
+                </div>
+                <div class="mb-3">
                     <label for="promptTemplate" class="form-label">Prompt Template:</label>
                     <textarea class="form-control" id="promptTemplate" rows="8"></textarea>
                 </div>
@@ -188,4 +195,63 @@
         }, 30000);
     });
 </script>
+
+<!-- Prompt History Modal -->
+<div class="modal fade" id="promptHistoryModal" tabindex="-1" aria-labelledby="promptHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="promptHistoryModalLabel">
+                    <i class="bi bi-clock-history"></i>
+                    Prompt Template History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    View and manage your prompt template history. You can activate any previous version.
+                </div>
+                <div id="promptHistoryList">
+                    <!-- History items will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.prompt-history-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.prompt-history-item.active {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+.prompt-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+}
+
+[data-theme="dark"] .prompt-preview {
+    background-color: #343a40;
+    border-color: #495057;
+}
+
+[data-theme="dark"] .prompt-history-item.active {
+    background-color: #343a40;
+}
+</style>
 {% endblock %}

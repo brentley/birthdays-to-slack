@@ -175,13 +175,49 @@ def api_prompt_template():
         if not data or 'template' not in data:
             return jsonify({'error': 'Missing template'}), 400
         
-        success = birthday_service.update_prompt_template(data['template'])
+        description = data.get('description', '')
+        success = birthday_service.update_prompt_template(data['template'], description)
         if success:
             # Clear cache to regenerate messages with new template
             update_birthday_cache()
             return jsonify({'success': True})
         else:
             return jsonify({'error': 'Failed to update template'}), 500
+
+@app.route('/api/prompt-history')
+def api_prompt_history():
+    """API endpoint to get prompt template history"""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+    
+    try:
+        history = birthday_service.get_prompt_history()
+        return jsonify({'history': history})
+    except Exception as e:
+        logger.error(f"Failed to get prompt history: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/activate-prompt', methods=['POST'])
+def api_activate_prompt():
+    """API endpoint to activate a prompt from history"""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+    
+    data = request.get_json()
+    if not data or 'prompt_id' not in data:
+        return jsonify({'error': 'Missing prompt_id'}), 400
+    
+    try:
+        success = birthday_service.activate_prompt_from_history(data['prompt_id'])
+        if success:
+            # Update cache to regenerate messages with new prompt
+            update_birthday_cache()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Prompt not found'}), 404
+    except Exception as e:
+        logger.error(f"Failed to activate prompt: {e}")
+        return jsonify({'error': str(e)}), 500
 
 def start_scheduler():
     """Start the background scheduler"""

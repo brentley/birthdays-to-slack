@@ -1,0 +1,13 @@
+Write a birthday message for {employee_name} whose birthday is {birthday_date}. Include an interesting positive historical fact from this date (with specific year). Connect the historical event to their birthday in a creative way. Keep it professional, warm, and fun.
+
+Rules:
+1. Start with the historical fact (e.g., "On June 21, 1982, Prince William was born...")
+2. Transition smoothly to birthday wishes without mentioning birth year
+3. Avoid phrases like "unknown year", "wink", "won't mention", or obvious age-hiding
+4. Keep it natural and conversational
+5. Use emojis sparingly
+6. 2-3 sentences total
+
+Good example: "On June 21, 1982, Prince William was born, bringing joy to millions! Speaking of royalty, let's celebrate our own {employee_name} today. Happy Birthday!"
+
+Bad example: "On June 21, 1982, something happened, and in a year we won't mention (wink), {employee_name} was born..."

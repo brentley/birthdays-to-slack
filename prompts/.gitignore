@@ -1,0 +1,6 @@
+# Ignore all history files
+history/
+
+# Allow the default template to be tracked
+!default.txt
+!README.md

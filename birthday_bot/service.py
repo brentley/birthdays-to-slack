@@ -190,18 +190,30 @@ class BirthdayService:
             return self.message_generator.prompt_template
         return None
 
-    def update_prompt_template(self, new_template: str) -> bool:
+    def update_prompt_template(self, new_template: str, description: str = "") -> bool:
         """Update the prompt template."""
         if not self.message_generator:
             logger.error("Message generator not initialized")
             return False
         
         try:
-            self.message_generator.update_prompt_template(new_template)
+            self.message_generator.update_prompt_template(new_template, description)
             return True
         except Exception as e:
             logger.error(f"Failed to update prompt template: {e}")
             return False
+
+    def get_prompt_history(self) -> List[Dict[str, Any]]:
+        """Get prompt template history."""
+        if self.message_generator:
+            return self.message_generator.get_prompt_history()
+        return []
+
+    def activate_prompt_from_history(self, prompt_id: str) -> bool:
+        """Activate a prompt from history."""
+        if not self.message_generator:
+            return False
+        return self.message_generator.activate_prompt_from_history(prompt_id)
 
     def get_service_status(self) -> Dict[str, Any]:
         """Get service status information"""
