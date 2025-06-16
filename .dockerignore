@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Development
+.dev-setup
+internal-notes.md
+*.log
+
+# Testing
+tests/
+test_*.py
+conftest.py
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github/
+deploy/
+
+# Environment
+.env
+.env.*
+
+# MacOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Build artifacts
+build/
+dist/
+
+# Security reports
+*-report.json
+safety-*.json
+bandit-*.json
+
+# Data files (will be created at runtime)
+data/
+logs/

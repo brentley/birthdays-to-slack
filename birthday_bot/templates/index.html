@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-6">
+                <i class="bi bi-calendar-event text-primary"></i>
+                Upcoming Birthdays
+            </h1>
+            <div>
+                <button class="btn btn-sm btn-outline-primary me-2" id="editPromptBtn" style="display:none;" onclick="showPromptModal()">
+                    <i class="bi bi-pencil"></i> Edit Prompt
+                </button>
+                <small class="text-muted" id="last-updated">Loading...</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 col-6 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="service-status">
+                                <i class="bi bi-circle-fill text-secondary"></i>
+                                <span>Loading</span>
+                            </div>
+                            <div class="status-label">Service Status</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="slack-status">-</div>
+                            <div class="status-label">Slack Notifications</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="total-events">-</div>
+                            <div class="status-label">Total Events</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="valid-events">-</div>
+                            <div class="status-label">Valid Events</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6 col-12 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="skipped-events">-</div>
+                            <div class="status-label">Skipped Events</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-12 text-center">
+                        <div class="status-metric">
+                            <div class="status-value" id="openai-status">-</div>
+                            <div class="status-label">OpenAI Integration</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Birthday Schedule -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-range"></i>
+                    Next 21 Days Schedule
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="loading-spinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading birthday data...</div>
+                </div>
+                
+                <div id="birthday-schedule" class="d-none">
+                    <!-- Birthday events will be loaded here -->
+                </div>
+                
+                <div id="no-birthdays" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-calendar-x display-1"></i>
+                    <h5 class="mt-2">No upcoming birthdays</h5>
+                    <p>No birthday events found in the next 21 days.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body py-2">
+                <div class="row text-center">
+                    <div class="col-md-4 col-12">
+                        <small>
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            Will send notification
+                        </small>
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <small>
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            Skipped (not in LDAP)
+                        </small>
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <small>
+                            <i class="bi bi-calendar-day"></i>
+                            Showing local timezone
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh notice -->
+<div class="row mt-2">
+    <div class="col-12 text-center">
+        <small class="text-muted">
+            <i class="bi bi-arrow-clockwise"></i>
+            Data refreshes automatically every 30 seconds
+        </small>
+    </div>
+</div>
+
+<!-- Prompt Template Modal -->
+<div class="modal fade" id="promptModal" tabindex="-1" aria-labelledby="promptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="promptModalLabel">
+                    <i class="bi bi-chat-left-text"></i>
+                    Birthday Message Prompt Template
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    This template is used to generate birthday messages. Use <code>{employee_name}</code> and <code>{birthday_date}</code> as placeholders.
+                </div>
+                <div class="mb-3">
+                    <label for="promptTemplate" class="form-label">Prompt Template:</label>
+                    <textarea class="form-control" id="promptTemplate" rows="8"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePromptTemplate()">Save Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app-enhanced.js') }}"></script>
+<script>
+    // Initialize the birthday dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBirthdayData();
+        loadServiceStatus();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            loadBirthdayData();
+            loadServiceStatus();
+        }, 30000);
+    });
+</script>
+{% endblock %}

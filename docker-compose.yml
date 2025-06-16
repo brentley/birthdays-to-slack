@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  birthdays-to-slack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - LDAP_SERVER=ldaps://ldap.google.com
+      - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
+      - ICS_URL=${ICS_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FLASK_ENV=production
+      - PORT=5000
+      - SLACK_NOTIFICATIONS_ENABLED=${SLACK_NOTIFICATIONS_ENABLED:-false}
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Development service
+  birthdays-to-slack-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    environment:
+      - LDAP_SERVER=ldaps://ldap.google.com
+      - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
+      - ICS_URL=${ICS_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FLASK_ENV=development
+      - PORT=5000
+      - SLACK_NOTIFICATIONS_ENABLED=${SLACK_NOTIFICATIONS_ENABLED:-false}
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+      - .:/app  # Mount source code for development
+    restart: "no"
+    profiles:
+      - dev
+
+  # Service for running tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m pytest test_birthdaybot.py -v
+    environment:
+      - LDAP_SERVER=ldaps://ldap.google.com
+      - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+    profiles:
+      - test

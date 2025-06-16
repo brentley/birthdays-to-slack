@@ -1,0 +1,273 @@
+/* Dark/Light Theme Support */
+:root {
+    --bs-primary: #0d6efd;
+    --bs-primary-rgb: 13, 110, 253;
+}
+
+[data-theme="dark"] {
+    --bs-body-bg: #212529;
+    --bs-body-color: #dee2e6;
+    --bs-secondary-bg: #343a40;
+    --bs-tertiary-bg: #2c3034;
+    --bs-border-color: #495057;
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-theme="dark"] .card {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .text-muted {
+    color: #adb5bd !important;
+}
+
+/* Theme Toggle Button */
+.theme-icon-light,
+.theme-icon-dark,
+.theme-icon-auto {
+    display: none;
+}
+
+[data-theme="light"] .theme-icon-light,
+[data-theme="dark"] .theme-icon-dark,
+[data-theme="auto"] .theme-icon-auto {
+    display: inline;
+}
+
+/* Status Metrics */
+.status-metric {
+    padding: 0.5rem 0;
+}
+
+.status-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.status-label {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Birthday Event Cards */
+.birthday-day {
+    margin-bottom: 1.5rem;
+}
+
+.birthday-day-header {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #6f42c1 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    margin-bottom: 0;
+}
+
+.birthday-day-date {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.birthday-day-name {
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.birthday-events {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    padding: 0;
+}
+
+.birthday-event {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    transition: background-color 0.2s ease;
+}
+
+.birthday-event:last-child {
+    border-bottom: none;
+}
+
+.birthday-event:hover {
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.birthday-event-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.birthday-event-details {
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.birthday-event-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-weight: 500;
+}
+
+.status-valid {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+}
+
+.status-invalid {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+[data-theme="dark"] .status-valid {
+    background-color: rgba(25, 135, 84, 0.2);
+    color: #75b798;
+}
+
+[data-theme="dark"] .status-invalid {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #ea868f;
+}
+
+/* Today's Events Highlight */
+.birthday-day.today .birthday-day-header {
+    background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+    box-shadow: 0 0.5rem 1rem rgba(253, 126, 20, 0.3);
+}
+
+.birthday-day.today .birthday-day-header::after {
+    content: " (Today)";
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .birthday-day-header {
+        padding: 0.75rem;
+    }
+    
+    .birthday-day-date {
+        font-size: 1.1rem;
+    }
+    
+    .birthday-event {
+        padding: 0.75rem;
+    }
+    
+    .birthday-event-name {
+        font-size: 1rem;
+    }
+    
+    .status-metric {
+        margin-bottom: 1rem;
+    }
+    
+    .status-value {
+        font-size: 1.25rem;
+    }
+}
+
+/* Loading and Empty States */
+.loading-overlay {
+    position: relative;
+}
+
+.loading-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+}
+
+[data-theme="dark"] .loading-overlay::after {
+    background: rgba(33, 37, 41, 0.8);
+}
+
+/* Birthday message styles */
+.birthday-event-message {
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+[data-theme="dark"] .birthday-event-message {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.message-preview {
+    margin-top: 0.25rem;
+    font-style: italic;
+    color: var(--bs-secondary-color);
+    white-space: pre-wrap;
+}
+
+.birthday-event-message button {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.birthday-event-message button:hover {
+    opacity: 1;
+}
+
+/* Animation for new content */
+.birthday-day {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar styling for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #6c757d;
+}

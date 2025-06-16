@@ -1,0 +1,11 @@
+# Deployment secrets
+.env
+
+# Certificates (should be added manually)
+certs/
+
+# Application data
+data/
+
+# Logs
+*.log

@@ -2,3 +2,7 @@ requests
 icalendar
 pytz
 ldap3
+flask
+apscheduler
+python-dateutil
+openai>=1.0.0
