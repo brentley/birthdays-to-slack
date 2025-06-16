@@ -34,36 +34,53 @@ class TestMessageGenerator:
 
     def test_init(self, temp_data_dir, mock_openai_client):
         """Test MessageGenerator initialization."""
-        generator = MessageGenerator("test-api-key", temp_data_dir)
+        # Create prompts directory structure
+        prompts_dir = Path(temp_data_dir) / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
+        
+        generator = MessageGenerator("test-api-key", temp_data_dir, str(prompts_dir))
         
         assert generator.data_dir == Path(temp_data_dir)
-        assert generator.prompt_template == MessageGenerator.DEFAULT_PROMPT_TEMPLATE
-        assert (Path(temp_data_dir) / "birthday_prompt.txt").exists()
+        # The prompt template will be the new default template
+        assert "Write a birthday message for {employee_name}" in generator.prompt_template
+        assert "whose birthday is {birthday_date}" in generator.prompt_template
         mock_openai_client.assert_called_once_with(api_key="test-api-key")
 
     def test_load_custom_prompt_template(self, temp_data_dir, mock_openai_client):
         """Test loading a custom prompt template."""
+        # Create prompts directory structure
+        prompts_dir = Path(temp_data_dir) / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
+        
         custom_prompt = "Custom prompt for {employee_name} on {birthday_date}"
-        prompt_file = Path(temp_data_dir) / "birthday_prompt.txt"
+        prompt_file = Path(temp_data_dir) / "current_prompt.txt"
         prompt_file.write_text(custom_prompt)
         
-        generator = MessageGenerator("test-api-key", temp_data_dir)
+        generator = MessageGenerator("test-api-key", temp_data_dir, str(prompts_dir))
         
         assert generator.prompt_template == custom_prompt
 
     def test_update_prompt_template(self, temp_data_dir, mock_openai_client):
         """Test updating the prompt template."""
-        generator = MessageGenerator("test-api-key", temp_data_dir)
+        # Create prompts directory structure
+        prompts_dir = Path(temp_data_dir) / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
+        
+        generator = MessageGenerator("test-api-key", temp_data_dir, str(prompts_dir))
         new_template = "New template for {employee_name} on {birthday_date}"
         
         generator.update_prompt_template(new_template)
         
         assert generator.prompt_template == new_template
-        assert Path(temp_data_dir, "birthday_prompt.txt").read_text() == new_template
+        assert Path(temp_data_dir, "current_prompt.txt").read_text() == new_template
 
     def test_update_prompt_template_missing_placeholders(self, temp_data_dir, mock_openai_client):
         """Test updating prompt template with missing placeholders."""
-        generator = MessageGenerator("test-api-key", temp_data_dir)
+        # Create prompts directory structure
+        prompts_dir = Path(temp_data_dir) / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
+        
+        generator = MessageGenerator("test-api-key", temp_data_dir, str(prompts_dir))
         
         with pytest.raises(ValueError, match="must contain"):
             generator.update_prompt_template("Invalid template without placeholders")
