@@ -41,9 +41,11 @@ class TestMessageGenerator:
         generator = MessageGenerator("test-api-key", temp_data_dir, str(prompts_dir))
         
         assert generator.data_dir == Path(temp_data_dir)
-        # The prompt template will be the new default template
-        assert "Write a birthday message for {employee_name}" in generator.prompt_template
-        assert "whose birthday is {birthday_date}" in generator.prompt_template
+        # When no default.txt exists, it falls back to the hardcoded DEFAULT_PROMPT_TEMPLATE
+        assert generator.prompt_template == MessageGenerator.DEFAULT_PROMPT_TEMPLATE
+        # Verify that current_prompt.txt was created with the default template
+        assert (Path(temp_data_dir) / "current_prompt.txt").exists()
+        assert (Path(temp_data_dir) / "current_prompt.txt").read_text() == MessageGenerator.DEFAULT_PROMPT_TEMPLATE
         mock_openai_client.assert_called_once_with(api_key="test-api-key")
 
     def test_load_custom_prompt_template(self, temp_data_dir, mock_openai_client):
