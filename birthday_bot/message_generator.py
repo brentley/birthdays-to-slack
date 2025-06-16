@@ -14,16 +14,19 @@ logger = logging.getLogger(__name__)
 class MessageGenerator:
     """Generate witty birthday messages using OpenAI with historical facts."""
     
-    DEFAULT_PROMPT_TEMPLATE = """It looks like {employee_name} has a birthday coming up on {birthday_date}. Write a witty POSITIVE slack message that mentions something POSITIVE or HAPPY that happened on their birthday in history, and end it with "and also {employee_name} was born. Happy Birthday {employee_name}!"
+    DEFAULT_PROMPT_TEMPLATE = """It looks like {employee_name} has a birthday coming up on {birthday_date}. Write a witty POSITIVE slack message that mentions something POSITIVE or HAPPY that happened on this date in history (with a specific year), then cleverly connect it to {employee_name}'s birthday without revealing their birth year.
 
 Make sure the historical fact is:
 - Genuinely positive and uplifting
 - Interesting and engaging
 - Appropriate for a workplace setting
 - Not controversial or sensitive
+- From a specific year (but not their birth year)
 
 The message should be:
 - Warm and celebratory
+- Playful about not revealing their age (e.g., "on this same date in a year we won't mention", "sometime later", etc.)
+- End with birthday wishes
 - Professional but fun
 - About 2-3 sentences total
 - Ready to post directly to Slack"""

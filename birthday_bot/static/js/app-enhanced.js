@@ -41,7 +41,6 @@ class EnhancedBirthdayManager extends BirthdayManager {
                         <div class="flex-grow-1">
                             <strong>Message:</strong>
                             <div class="message-preview">${this.escapeHtml(event.message)}</div>
-                            ${historicalFact ? `<small class="text-muted"><em>Historical fact: ${this.escapeHtml(historicalFact)}</em></small>` : ''}
                         </div>
                         ${isGenerated ? `
                             <button class="btn btn-sm btn-outline-secondary ms-2" 
