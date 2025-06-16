@@ -23,6 +23,11 @@ dependencies = [
     "openai>=1.0.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["birthday_bot*"]
+exclude = ["tests*", "deploy*", "certs*"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
