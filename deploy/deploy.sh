@@ -19,6 +19,12 @@ set +a
 echo "📁 Creating required directories..."
 mkdir -p data certs
 
+# Set proper permissions for data directory
+echo "🔐 Setting directory permissions..."
+chmod 755 data
+# Ensure the data directory is writable by the container user (uid 1000)
+sudo chown -R 1000:1000 data || chown -R 1000:1000 data 2>/dev/null || true
+
 # Check for certificates
 if [ ! -f "certs/ldapcertificate.crt" ] || [ ! -f "certs/ldapcertificate.key" ]; then
     echo "❌ LDAP certificates not found in certs/ directory"

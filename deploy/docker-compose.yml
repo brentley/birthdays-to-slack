@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   birthdays-to-slack:
-    image: ghcr.io/visiquate/birthdays-to-slack:latest
+    image: ghcr.io/brentley/birthdays-to-slack:latest
     container_name: birthdays-to-slack
     ports:
       - "5000:5000"
@@ -40,7 +38,8 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=300
       - WATCHTOWER_SCOPE=birthdays-to-slack
-      - WATCHTOWER_NOTIFICATIONS=email
+      # Only enable email notifications if configured
+      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS:-}
       - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${WATCHTOWER_EMAIL_FROM:-}
       - WATCHTOWER_NOTIFICATION_EMAIL_TO=${WATCHTOWER_EMAIL_TO:-}
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=${WATCHTOWER_EMAIL_SERVER:-}

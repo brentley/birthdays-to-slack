@@ -27,6 +27,17 @@
     color: #adb5bd !important;
 }
 
+/* Additional dark mode text fixes */
+[data-theme="dark"] .status-label,
+[data-theme="dark"] .status-value,
+[data-theme="dark"] .birthday-event,
+[data-theme="dark"] .birthday-event strong,
+[data-theme="dark"] .message-text,
+[data-theme="dark"] .service-status,
+[data-theme="dark"] .status-card {
+    color: var(--bs-body-color) !important;
+}
+
 /* Theme Toggle Button */
 .theme-icon-light,
 .theme-icon-dark,
@@ -220,6 +231,7 @@
 
 [data-theme="dark"] .birthday-event-message {
     background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
 }
 
 .message-preview {
