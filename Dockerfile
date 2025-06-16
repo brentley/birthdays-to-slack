@@ -26,8 +26,8 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser
+# Create non-root user (ec2-user with uid=1000)
+RUN useradd -m -u 1000 ec2-user
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
@@ -39,10 +39,10 @@ COPY birthday_bot/ ./birthday_bot/
 
 # Create necessary directories
 RUN mkdir -p data logs && \
-    chown -R appuser:appuser /app
+    chown -R ec2-user:ec2-user /app
 
 # Switch to non-root user
-USER appuser
+USER ec2-user
 
 # Expose port
 EXPOSE 5000
