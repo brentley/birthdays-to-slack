@@ -1,3 +1,26 @@
+// VisiQuate standard time formatting function
+const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+    });
+};
+
+// VisiQuate standard date formatting function (for dates without times)
+const formatDate = (dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
 // Theme management
 class ThemeManager {
     constructor() {
@@ -122,13 +145,14 @@ class BirthdayManager {
             if (diffMinutes < 1) {
                 timeText = 'Just now';
             } else if (diffMinutes < 60) {
-                timeText = `${diffMinutes} minutes ago`;
+                timeText = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
             } else {
                 const diffHours = Math.floor(diffMinutes / 60);
-                timeText = `${diffHours} hours ago`;
+                timeText = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
             }
             
-            lastUpdatedElement.textContent = `Last updated: ${timeText}`;
+            // Show both relative time and absolute time with timezone
+            lastUpdatedElement.innerHTML = `Last updated: ${timeText} <small class="text-muted">(${formatTime(data.last_updated)})</small>`;
         }
     }
 
@@ -195,13 +219,7 @@ class BirthdayManager {
     }
 
     renderBirthdayDay(dayData, isToday = false) {
-        const date = new Date(dayData.date + 'T00:00:00');
-        const formattedDate = date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const formattedDate = formatDate(dayData.date);
         
         const todayClass = isToday ? 'today' : '';
         

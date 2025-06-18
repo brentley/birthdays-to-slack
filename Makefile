@@ -1,51 +1,37 @@
-.PHONY: build up down dev test clean logs shell deploy help
+.PHONY: help dev test build deploy logs shell stop clean
 
-# Default target
 help:
 	@echo "Available commands:"
-	@echo "  build    - Build the Docker image"
-	@echo "  up       - Start the birthday service (production)"
-	@echo "  down     - Stop the birthday service"
-	@echo "  dev      - Start the service in development mode"
-	@echo "  test     - Run tests"
-	@echo "  logs     - View service logs"
-	@echo "  shell    - Get a shell in the container"
-	@echo "  deploy   - Sync deployment files to server"
-	@echo "  clean    - Remove Docker images and containers"
+	@echo "  make dev     - Start development environment"
+	@echo "  make test    - Run tests"
+	@echo "  make build   - Build Docker image"
+	@echo "  make deploy  - Deploy to production"
+	@echo "  make logs    - View logs"
+	@echo "  make shell   - Access container shell"
+	@echo "  make stop    - Stop all containers"
+	@echo "  make clean   - Clean up everything"
 
-# Build the Docker image
-build:
-	docker compose build
-
-# Start the birthday service (production)
-up:
-	docker compose up -d
-
-# Stop the birthday service
-down:
-	docker compose down
-
-# Start in development mode
 dev:
 	docker compose --profile dev up
 
-# Run tests
 test:
-	docker compose --profile test run --rm test
+	docker compose --profile test up --abort-on-container-exit
 
-# View logs
+build:
+	docker compose build
+
+deploy:
+	./deploy-smart.sh
+
 logs:
 	docker compose logs -f
 
-# Get a shell in the container for debugging
 shell:
-	docker compose exec birthdays-to-slack bash
+	docker compose exec birthdays-to-slack /bin/bash
 
-# Deploy to server
-deploy:
-	./sync-deploy.sh
+stop:
+	docker compose down
 
-# Clean up Docker images and containers
 clean:
-	docker compose down --rmi all --volumes --remove-orphans
+	docker compose down -v
 	docker system prune -f

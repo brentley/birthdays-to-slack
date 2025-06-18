@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  birthdays-to-slack-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: birthdays-to-slack-dev
+    ports:
+      - "5001:5000"
+    environment:
+      # Project identification
+      - PROJECT_NAME=birthdays-to-slack
+      - SERVICE_NAME=birthdays-to-slack-dev
+      - ENVIRONMENT=development
+      # Build information
+      - GIT_COMMIT=development
+      - BUILD_DATE=development
+      - VERSION=development
+      # Service configuration
+      - LDAP_SERVER=ldaps://ldap.google.com
+      - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
+      - ICS_URL=${ICS_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FLASK_ENV=development
+      - PORT=5000
+      - SLACK_NOTIFICATIONS_ENABLED=${SLACK_NOTIFICATIONS_ENABLED:-false}
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./birthday_bot:/app/birthday_bot  # Mount source code for development
+      - ./prompts:/app/prompts  # Mount prompts directory
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -1,7 +1,21 @@
-/* Dark/Light Theme Support */
+/* VisiQuate Brand Colors */
 :root {
-    --bs-primary: #0d6efd;
-    --bs-primary-rgb: 13, 110, 253;
+    /* VisiQuate Brand Colors */
+    --vq-primary: #116df8;
+    --vq-accent: #ff5100;
+    
+    /* Bootstrap overrides with VisiQuate colors */
+    --bs-primary: var(--vq-primary);
+    --bs-primary-rgb: 17, 109, 248;
+    --bs-danger: var(--vq-accent);
+    --bs-danger-rgb: 255, 81, 0;
+    
+    /* Light mode defaults */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
 }
 
 [data-theme="dark"] {

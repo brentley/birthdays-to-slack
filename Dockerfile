@@ -1,19 +1,23 @@
-# Use an official Python runtime as a parent image
+# Multi-stage build for Python apps
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
 FROM python:3.11-slim
 
-# Set build arguments
-ARG BUILD_DATE
-ARG VCS_REF
+# Add build arguments
+ARG GIT_COMMIT=unknown
+ARG BUILD_DATE=unknown
+ARG VERSION=1.0.0
 
-# Labels
-LABEL org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.source="https://github.com/visiquate/birthdays-to-slack" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.title="Birthday Bot" \
-      org.opencontainers.image.description="Automated birthday notifications for Slack with AI-generated messages"
-
-# Set the working directory in the container
-WORKDIR /app
+# Set as environment variables
+ENV GIT_COMMIT=$GIT_COMMIT \
+    BUILD_DATE=$BUILD_DATE \
+    VERSION=$VERSION \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 # Install system dependencies
 RUN apt-get update && \
@@ -26,31 +30,27 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user (ec2-user with uid=1000)
-RUN useradd -m -u 1000 ec2-user
+# Create non-root user
+RUN useradd -m -u 1000 appuser
 
-# Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
 
-# Copy the application code
-COPY birthday_bot/ ./birthday_bot/
+# Copy from builder
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+COPY --chown=appuser:appuser birthday_bot/ ./birthday_bot/
 
 # Create necessary directories
-RUN mkdir -p data logs && \
-    chown -R ec2-user:ec2-user /app
+RUN mkdir -p data logs prompts/history && \
+    chown -R appuser:appuser /app
 
-# Switch to non-root user
-USER ec2-user
+# Update PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
 
-# Expose port
+USER appuser
+
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:5000/api/status || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
-# Command to run the Flask app
 CMD ["python", "-m", "birthday_bot"]
-

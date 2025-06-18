@@ -1,10 +1,20 @@
+version: '3.8'
+
 services:
-  birthdays-to-slack:
-    image: ghcr.io/brentley/birthdays-to-slack:latest
+  app:
+    image: ghcr.io/visiquate/birthdays-to-slack:latest
     container_name: birthdays-to-slack
-    ports:
-      - "5000:5000"
+    # No ports exposed - access via Cloudflare tunnel
     environment:
+      # Project identification
+      - PROJECT_NAME=birthdays-to-slack
+      - SERVICE_NAME=birthdays-to-slack
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      # Build information
+      - GIT_COMMIT=${GIT_COMMIT:-unknown}
+      - BUILD_DATE=${BUILD_DATE:-unknown}
+      - VERSION=${VERSION:-1.0.0}
+      # Service configuration
       - LDAP_SERVER=ldaps://ldap.google.com
       - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
       - ICS_URL=${ICS_URL}
@@ -21,10 +31,12 @@ services:
       - ./data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - app_network
     labels:
       - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"
 
@@ -35,25 +47,33 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_SCOPE=birthdays-to-slack
-      # Only enable email notifications if configured
-      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS:-}
-      - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${WATCHTOWER_EMAIL_FROM:-}
-      - WATCHTOWER_NOTIFICATION_EMAIL_TO=${WATCHTOWER_EMAIL_TO:-}
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=${WATCHTOWER_EMAIL_SERVER:-}
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=${WATCHTOWER_EMAIL_PORT:-587}
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${WATCHTOWER_EMAIL_USER:-}
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${WATCHTOWER_EMAIL_PASSWORD:-}
-    command: --interval 300 --cleanup --scope birthdays-to-slack
+      - WATCHTOWER_HTTP_API_METRICS=true
+    # No ports exposed to host - access via Cloudflare tunnel
+    command: --interval 30 --scope birthdays-to-slack
+    networks:
+      - app_network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: birthdays-to-slack-tunnel
+    container_name: birthdays-to-slack-cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - birthdays-to-slack
+    command: tunnel run
     environment:
-      - NO_AUTOUPDATE=true
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  birthdays-data:
+    driver: local

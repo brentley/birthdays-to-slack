@@ -3,6 +3,18 @@
 // Include existing app.js content
 document.write('<script src="/static/js/app.js"></script>');
 
+// VisiQuate standard time formatting function
+const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+    });
+};
+
 // Extended BirthdayManager for OpenAI features
 class EnhancedBirthdayManager extends BirthdayManager {
     updateServiceStatusDisplay(data) {
@@ -206,7 +218,7 @@ async function showPromptHistory() {
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             <h6>${entry.description || 'No description'}</h6>
-                            <small class="text-muted">${entry.created_at === 'current' ? 'Current' : new Date(entry.created_at).toLocaleString()}</small>
+                            <small class="text-muted">${entry.created_at === 'current' ? 'Current' : formatTime(entry.created_at)}</small>
                             <pre class="prompt-preview mt-2">${entry.template.substring(0, 200)}${entry.template.length > 200 ? '...' : ''}</pre>
                         </div>
                         <div class="btn-group">

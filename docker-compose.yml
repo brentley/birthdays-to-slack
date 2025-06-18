@@ -2,12 +2,20 @@ version: '3.8'
 
 services:
   birthdays-to-slack:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/visiquate/birthdays-to-slack:latest
+    container_name: birthdays-to-slack
     ports:
       - "5002:5000"
     environment:
+      # Project identification
+      - PROJECT_NAME=birthdays-to-slack
+      - SERVICE_NAME=birthdays-to-slack
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      # Build information
+      - GIT_COMMIT=${GIT_COMMIT:-unknown}
+      - BUILD_DATE=${BUILD_DATE:-unknown}
+      - VERSION=${VERSION:-1.0.0}
+      # Service configuration
       - LDAP_SERVER=ldaps://ldap.google.com
       - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
       - ICS_URL=${ICS_URL}
@@ -22,19 +30,49 @@ services:
       - ./certs:/app/certs:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: birthdays-to-slack-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_SCOPE=birthdays-to-slack
+    ports:
+      - "${WATCHTOWER_PORT:-8084}:8080"
+    command: --interval 30 --scope birthdays-to-slack
+    labels:
+      - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"
 
   # Development service
   birthdays-to-slack-dev:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: birthdays-to-slack-dev
     ports:
       - "5001:5000"
     environment:
+      # Project identification
+      - PROJECT_NAME=birthdays-to-slack
+      - SERVICE_NAME=birthdays-to-slack-dev
+      - ENVIRONMENT=development
+      # Build information
+      - GIT_COMMIT=development
+      - BUILD_DATE=development
+      - VERSION=development
+      # Service configuration
       - LDAP_SERVER=ldaps://ldap.google.com
       - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
       - ICS_URL=${ICS_URL}
@@ -57,7 +95,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python -m pytest test_birthdaybot.py -v
+    command: python -m pytest tests/ -v --cov=birthday_bot --cov-report=xml --cov-report=html
     environment:
       - LDAP_SERVER=ldaps://ldap.google.com
       - SEARCH_BASE=ou=Users,dc=visiquate,dc=com

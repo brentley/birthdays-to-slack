@@ -9,6 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 from threading import Lock
 import json
+import time
 
 from birthday_bot.service import BirthdayService
 
@@ -20,6 +21,9 @@ app = Flask(__name__,
             template_folder='templates',
             static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+
+# Track service start time
+START_TIME = time.time()
 
 # Global state
 birthday_service = None
@@ -128,6 +132,55 @@ def api_status():
         status_data.update(service_status)
     
     return jsonify(status_data)
+
+@app.route('/health')
+def health():
+    """Standardized health check endpoint."""
+    health_status = {
+        'status': 'healthy',
+        'service': os.getenv('SERVICE_NAME', 'birthdays-to-slack'),
+        'version': os.getenv('VERSION', '1.0.0'),
+        'commit': os.getenv('GIT_COMMIT', 'unknown')[:7],
+        'build_date': os.getenv('BUILD_DATE', 'unknown'),
+        'uptime': int(time.time() - START_TIME),
+        'environment': os.getenv('ENVIRONMENT', 'production'),
+        'checks': {}
+    }
+    
+    # Check if scheduler is running
+    try:
+        if scheduler and scheduler.running:
+            health_status['checks']['scheduler'] = 'healthy'
+            health_status['checks']['scheduled_jobs'] = len(scheduler.get_jobs())
+        else:
+            health_status['checks']['scheduler'] = 'unhealthy: not running'
+            health_status['status'] = 'unhealthy'
+    except Exception as e:
+        health_status['checks']['scheduler'] = f'unhealthy: {str(e)}'
+        health_status['status'] = 'unhealthy'
+    
+    # Check if birthday service is initialized
+    if birthday_service is not None:
+        health_status['checks']['birthday_service'] = 'healthy'
+        health_status['checks']['cache_size'] = len(birthday_cache)
+    else:
+        health_status['checks']['birthday_service'] = 'unhealthy: not initialized'
+        health_status['status'] = 'unhealthy'
+    
+    # Check LDAP connectivity if service is initialized
+    if birthday_service:
+        try:
+            service_status = birthday_service.get_service_status()
+            health_status['checks']['ldap'] = 'healthy' if service_status.get('ldap_connected', False) else 'unhealthy: not connected'
+            health_status['checks']['ics_url'] = 'configured' if service_status.get('ics_configured', False) else 'not configured'
+            health_status['checks']['webhook_url'] = 'configured' if service_status.get('webhook_configured', False) else 'not configured'
+        except Exception as e:
+            health_status['checks']['services'] = f'unhealthy: {str(e)}'
+    
+    # Return pretty-printed JSON
+    response = jsonify(health_status)
+    response.headers['Content-Type'] = 'application/json'
+    return response, 200 if health_status['status'] == 'healthy' else 503
 
 @app.route('/api/regenerate-message', methods=['POST'])
 def api_regenerate_message():

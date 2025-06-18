@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: |
+      bash -c "
+        pip install -r requirements-dev.txt &&
+        pytest tests/ -v --cov=birthday_bot --cov-report=xml --cov-report=html --cov-report=term-missing
+      "
+    environment:
+      - LDAP_SERVER=ldaps://ldap.google.com
+      - SEARCH_BASE=ou=Users,dc=visiquate,dc=com
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./tests:/app/tests:ro
+      - ./birthday_bot:/app/birthday_bot:ro
+      - ./coverage:/app/coverage
+    working_dir: /app

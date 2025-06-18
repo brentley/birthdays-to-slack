@@ -1,0 +1,21 @@
+# Security scanning
+bandit
+safety
+pip-audit
+semgrep
+
+# Code quality
+flake8
+black
+isort
+mypy
+
+# Testing
+pytest
+pytest-cov
+pytest-mock
+pytest-xdist
+
+# Type hints
+types-requests
+types-pytz

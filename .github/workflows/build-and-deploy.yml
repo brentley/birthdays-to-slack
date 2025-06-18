@@ -1,0 +1,177 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'  # Daily security scan at 2 AM UTC
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v --cov=birthday_bot --cov-report=xml --cov-report=html
+      
+      - name: Upload coverage
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v3
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      
+      - name: Run Bandit security linter
+        run: |
+          bandit -r birthday_bot/ -f json -o bandit-report.json || true
+      
+      - name: Run Safety check
+        run: |
+          safety check --json || true
+      
+      - name: Run pip-audit
+        run: |
+          pip-audit || true
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/python
+
+  build:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VERSION=${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Watchtower Update
+        run: |
+          # Check if Watchtower configuration is available
+          if [[ -n "${{ secrets.WATCHTOWER_TOKEN }}" ]]; then
+            echo "🚀 Triggering Watchtower deployment..."
+            
+            # Attempt to trigger deployment
+            response=$(curl -s -w "\n%{http_code}" \
+              -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
+              -X POST \
+              "https://18.118.142.110:${{ secrets.WATCHTOWER_PORT || '8084' }}/v1/update" 2>/dev/null || echo "000")
+            
+            http_code=$(echo "$response" | tail -n1)
+            
+            if [[ "$http_code" -eq 200 ]] || [[ "$http_code" -eq 204 ]]; then
+              echo "✅ Deployment triggered successfully!"
+            else
+              echo "❌ Failed to trigger deployment. HTTP Status: $http_code"
+              echo "Response: $(echo "$response" | head -n-1)"
+              exit 1
+            fi
+          else
+            echo "⚠️ Watchtower configuration not found. Skipping automatic deployment."
+            echo "To enable automatic deployments, set WATCHTOWER_TOKEN and optionally WATCHTOWER_PORT secrets."
+          fi
+
+  scheduled-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build test image
+        run: docker build -t birthdays-to-slack-test .
+      
+      - name: Run full test suite
+        run: |
+          docker run --rm \
+            -e LDAP_SERVER=ldaps://ldap.google.com \
+            -e SEARCH_BASE=ou=Users,dc=visiquate,dc=com \
+            birthdays-to-slack-test \
+            python -m pytest tests/ -v
