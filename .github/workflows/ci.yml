@@ -168,3 +168,83 @@ jobs:
           echo "⚠️ Security scan had issues (non-blocking)"
         fi
         echo "✅ Quality gate passed"
+  trigger-deployment:
+    name: Trigger Deployment
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Trigger Watchtower Updates
+      env:
+        # Single Watchtower configuration (legacy support)
+        WATCHTOWER_URL: ${{ secrets.WATCHTOWER_URL }}
+        WATCHTOWER_TOKEN: ${{ secrets.WATCHTOWER_TOKEN }}
+        # Multi-Watchtower configuration (JSON format)
+        # Example: [{"name":"prod","url":"http://server1:8080","token":"token1"},{"name":"staging","url":"http://server2:8080","token":"token2"}]
+        WATCHTOWER_ENDPOINTS: ${{ secrets.WATCHTOWER_ENDPOINTS }}
+      run: |
+        # Function to trigger a single Watchtower instance
+        trigger_watchtower() {
+          local name=$1
+          local url=$2
+          local token=$3
+          
+          echo "🚀 Triggering Watchtower deployment for: $name"
+          response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer ${token}" \
+            "${url}/v1/update" 2>/dev/null || echo "000")
+          
+          http_code=$(echo "$response" | tail -n1)
+          
+          if [[ "$http_code" -eq 200 ]] || [[ "$http_code" -eq 204 ]]; then
+            echo "✅ [$name] Deployment triggered successfully!"
+            return 0
+          else
+            echo "❌ [$name] Failed to trigger deployment. HTTP Status: $http_code"
+            return 1
+          fi
+        }
+        
+        triggered=0
+        failed=0
+        
+        # Check for multi-Watchtower configuration first
+        if [[ -n "$WATCHTOWER_ENDPOINTS" ]]; then
+          echo "📋 Using multi-Watchtower configuration"
+          
+          # Parse JSON array of endpoints
+          while IFS= read -r endpoint; do
+            name=$(echo "$endpoint" | jq -r '.name // "unnamed"')
+            url=$(echo "$endpoint" | jq -r '.url // empty')
+            token=$(echo "$endpoint" | jq -r '.token // empty')
+            
+            if [[ -n "$url" ]] && [[ -n "$token" ]]; then
+              if trigger_watchtower "$name" "$url" "$token"; then
+                ((triggered++))
+              else
+                ((failed++))
+              fi
+            fi
+          done < <(echo "$WATCHTOWER_ENDPOINTS" | jq -c '.[]' 2>/dev/null || echo "")
+          
+        # Fall back to single Watchtower configuration
+        elif [[ -n "$WATCHTOWER_URL" ]] && [[ -n "$WATCHTOWER_TOKEN" ]]; then
+          echo "📋 Using single Watchtower configuration"
+          if trigger_watchtower "default" "$WATCHTOWER_URL" "$WATCHTOWER_TOKEN"; then
+            ((triggered++))
+          else
+            ((failed++))
+          fi
+        else
+          echo "⚠️  No Watchtower configuration found"
+          echo "To enable automatic deployments, set either:"
+          echo "  - WATCHTOWER_URL and WATCHTOWER_TOKEN (single instance)"
+          echo "  - WATCHTOWER_ENDPOINTS (multiple instances as JSON)"
+          exit 0
+        fi
+        
+        echo ""
+        echo "📊 Summary: $triggered succeeded, $failed failed"
+        
+        # Don't fail the build even if some deployments failed
+        exit 0
