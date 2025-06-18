@@ -36,6 +36,15 @@ services:
       retries: 3
     labels:
       - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"
+      - "com.visiquate.service.type=backend"
+      - "com.visiquate.service.architecture=monolithic"
+      - "com.visiquate.service.state=stateful"
+      - "com.visiquate.service.category=automation"
+      - "com.visiquate.service.frontend=true"
+      - "com.visiquate.service.backend=true"
+      - "com.visiquate.service.api=true"
+      - "com.visiquate.service.scheduled=true"
+      - "com.visiquate.service.description=Automated birthday notification system with AI-generated messages"
 
   watchtower:
     image: containrrr/watchtower
