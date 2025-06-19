@@ -144,7 +144,7 @@ jobs:
             response=$(curl -s -w "\n%{http_code}" \
               -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
               -X POST \
-              "http://18.118.142.110:${{ secrets.WATCHTOWER_PORT || '8084' }}/v1/update" 2>/dev/null || echo "000")
+              "http://18.118.142.110:8082/v1/update" 2>/dev/null || echo "000")
             
             http_code=$(echo "$response" | tail -n1)
             
