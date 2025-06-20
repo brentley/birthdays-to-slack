@@ -1,19 +1,20 @@
 // Enhanced app.js with OpenAI message support
 
-// Include existing app.js content
-document.write('<script src="/static/js/app.js"></script>');
+// Note: This file expects app.js to be loaded first in the HTML
 
-// VisiQuate standard time formatting function
-const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-};
+// VisiQuate standard time formatting function (if not already defined)
+if (typeof formatTime === 'undefined') {
+    window.formatTime = (timestamp) => {
+        const date = new Date(timestamp);
+        return date.toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+    };
+}
 
 // Extended BirthdayManager for OpenAI features
 class EnhancedBirthdayManager extends BirthdayManager {
