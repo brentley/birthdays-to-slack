@@ -129,37 +129,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Trigger Watchtower Update
-        run: |
-          # Check if Watchtower configuration is available
-          if [[ -n "${{ secrets.WATCHTOWER_TOKEN }}" ]]; then
-            echo "🚀 Triggering Watchtower deployment..."
-            
-            # Attempt to trigger deployment
-            response=$(curl -s -w "\n%{http_code}" \
-              -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
-              -X POST \
-              "http://18.118.142.110:8082/v1/update" 2>/dev/null || echo "000")
-            
-            http_code=$(echo "$response" | tail -n1)
-            
-            if [[ "$http_code" -eq 200 ]] || [[ "$http_code" -eq 204 ]]; then
-              echo "✅ Deployment triggered successfully!"
-            else
-              echo "❌ Failed to trigger deployment. HTTP Status: $http_code"
-              echo "Response: $(echo "$response" | head -n-1)"
-              exit 1
-            fi
-          else
-            echo "⚠️ Watchtower configuration not found. Skipping automatic deployment."
-            echo "To enable automatic deployments, set WATCHTOWER_TOKEN and optionally WATCHTOWER_PORT secrets."
-          fi
-
   scheduled-test:
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'

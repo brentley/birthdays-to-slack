@@ -56,14 +56,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - WATCHTOWER_HTTP_API_UPDATE=true
-      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_SCOPE=birthdays-to-slack
-      - WATCHTOWER_HTTP_API_METRICS=true
-    # No ports exposed to host - access via Cloudflare tunnel
-    command: --interval 30 --scope birthdays-to-slack
+      - WATCHTOWER_POLL_INTERVAL=300
+    command: ["--interval", "300", "--scope", "birthdays-to-slack"]
     networks:
       - app_network
     labels:
