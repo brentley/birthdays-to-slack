@@ -248,6 +248,44 @@
     color: var(--bs-body-color);
 }
 
+/* Message editing */
+.message-edit-container {
+    margin-top: 0.5rem;
+}
+
+.message-edit-textarea {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    resize: vertical;
+}
+
+.message-edit-textarea:focus {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--vq-primary);
+    box-shadow: 0 0 0 0.2rem rgba(17, 109, 248, 0.25);
+    outline: none;
+}
+
+.birthday-event-message .btn-group {
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .message-edit-textarea {
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+    border-color: var(--bs-gray-700);
+}
+
+[data-theme="dark"] .message-edit-textarea:focus {
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+}
+
 .message-preview {
     margin-top: 0.25rem;
     font-style: italic;

@@ -56,15 +56,33 @@ class EnhancedBirthdayManager extends BirthdayManager {
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             <strong>Message:</strong>
-                            <div class="message-preview">${this.escapeHtml(event.message)}</div>
+                            <div class="message-preview" id="message-${this.escapeHtml(event.name).replace(/\s+/g, '-')}-${event.date}">${this.escapeHtml(event.message)}</div>
+                            <div class="message-edit-container" id="edit-${this.escapeHtml(event.name).replace(/\s+/g, '-')}-${event.date}" style="display: none;">
+                                <textarea class="form-control message-edit-textarea" rows="3">${this.escapeHtml(event.message)}</textarea>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-primary" onclick="saveEditedMessage('${this.escapeHtml(event.name)}', '${event.date}')">
+                                        <i class="bi bi-check"></i> Save
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelEditMessage('${this.escapeHtml(event.name)}', '${event.date}')">
+                                        <i class="bi bi-x"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        ${isGenerated ? `
-                            <button class="btn btn-sm btn-outline-secondary ms-2" 
-                                    onclick="regenerateMessage('${this.escapeHtml(event.name)}', '${event.date}')"
-                                    title="Regenerate message">
-                                <i class="bi bi-arrow-clockwise"></i>
+                        <div class="btn-group ms-2">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="editMessage('${this.escapeHtml(event.name)}', '${event.date}')"
+                                    title="Edit message">
+                                <i class="bi bi-pencil"></i>
                             </button>
-                        ` : ''}
+                            ${isGenerated ? `
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        onclick="regenerateMessage('${this.escapeHtml(event.name)}', '${event.date}')"
+                                        title="Regenerate message">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -279,6 +297,99 @@ async function activatePrompt(promptId) {
     } catch (error) {
         console.error('Error activating prompt:', error);
         alert('Failed to activate prompt');
+    }
+}
+
+// Edit message functions
+function editMessage(name, date) {
+    const nameId = name.replace(/\s+/g, '-');
+    const messageDiv = document.getElementById(`message-${nameId}-${date}`);
+    const editDiv = document.getElementById(`edit-${nameId}-${date}`);
+    
+    if (messageDiv && editDiv) {
+        messageDiv.style.display = 'none';
+        editDiv.style.display = 'block';
+        
+        // Focus on textarea
+        const textarea = editDiv.querySelector('textarea');
+        if (textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+    }
+}
+
+function cancelEditMessage(name, date) {
+    const nameId = name.replace(/\s+/g, '-');
+    const messageDiv = document.getElementById(`message-${nameId}-${date}`);
+    const editDiv = document.getElementById(`edit-${nameId}-${date}`);
+    
+    if (messageDiv && editDiv) {
+        messageDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+        
+        // Reset textarea to original value
+        const textarea = editDiv.querySelector('textarea');
+        if (textarea) {
+            textarea.value = messageDiv.textContent;
+        }
+    }
+}
+
+async function saveEditedMessage(name, date) {
+    const nameId = name.replace(/\s+/g, '-');
+    const editDiv = document.getElementById(`edit-${nameId}-${date}`);
+    const textarea = editDiv.querySelector('textarea');
+    
+    if (!textarea) return;
+    
+    const newMessage = textarea.value.trim();
+    if (!newMessage) {
+        alert('Message cannot be empty');
+        return;
+    }
+    
+    // Show loading state
+    const saveBtn = editDiv.querySelector('.btn-primary');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+    saveBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/update-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                date: date,
+                message: newMessage
+            })
+        });
+        
+        if (response.ok) {
+            // Update the display
+            const messageDiv = document.getElementById(`message-${nameId}-${date}`);
+            if (messageDiv) {
+                messageDiv.textContent = newMessage;
+            }
+            
+            // Hide edit mode
+            cancelEditMessage(name, date);
+            
+            // Show success notification
+            showNotification('Message updated successfully', 'success');
+        } else {
+            const error = await response.json();
+            alert('Failed to update message: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error updating message:', error);
+        alert('Failed to update message');
+    } finally {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
     }
 }
 

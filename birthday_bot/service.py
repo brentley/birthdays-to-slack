@@ -234,3 +234,16 @@ class BirthdayService:
             'search_base_configured': bool(self.search_base),
             'openai_configured': bool(self.message_generator)
         }
+    
+    def update_message(self, employee_name: str, birthday_date: date, new_message: str) -> bool:
+        """Update a birthday message for a specific employee."""
+        if not self.message_generator:
+            logger.error("Message generator not initialized")
+            return False
+        
+        try:
+            # Update the message in the generator
+            return self.message_generator.update_message(employee_name, birthday_date, new_message)
+        except Exception as e:
+            logger.error(f"Failed to update message for {employee_name}: {e}")
+            return False

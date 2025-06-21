@@ -213,8 +213,13 @@ The message should be:
         
         # Check if we already have a message for this person/date
         if not regenerate and message_key in self.generated_messages:
+            # If the message was manually edited, keep it unless explicitly regenerating
+            existing_msg = self.generated_messages[message_key]
+            if existing_msg.get('manually_edited', False):
+                logger.info(f"Using manually edited message for {employee_name} on {birthday_date}")
+                return existing_msg
             logger.info(f"Using cached message for {employee_name} on {birthday_date}")
-            return self.generated_messages[message_key]
+            return existing_msg
         
         # Get previous facts to avoid
         previous_facts = self.history.get(employee_name, [])
@@ -353,3 +358,28 @@ The message should be:
             del self.sent_messages[sent_key]
             self._save_sent_messages()
             logger.info(f"Cleared sent tracking for {employee_name} on {birthday_date}")
+    
+    def update_message(self, employee_name: str, birthday_date: date, new_message: str) -> bool:
+        """Update an existing birthday message."""
+        message_key = f"{employee_name}_{birthday_date.isoformat()}"
+        
+        # Check if message exists
+        if message_key not in self.generated_messages:
+            logger.error(f"No message found for {employee_name} on {birthday_date}")
+            return False
+        
+        try:
+            # Update the message
+            self.generated_messages[message_key]['message'] = new_message
+            self.generated_messages[message_key]['manually_edited'] = True
+            self.generated_messages[message_key]['edited_at'] = datetime.utcnow().isoformat()
+            
+            # Save the updated messages
+            self._save_generated_messages()
+            
+            logger.info(f"Updated message for {employee_name} on {birthday_date}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to update message: {e}")
+            return False

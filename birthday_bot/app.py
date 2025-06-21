@@ -298,6 +298,37 @@ def api_clear_sent_tracking():
         logger.error(f"Failed to clear sent tracking: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/update-message', methods=['POST'])
+def api_update_message():
+    """API endpoint to update a birthday message"""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+    
+    data = request.get_json()
+    if not data or 'name' not in data or 'date' not in data or 'message' not in data:
+        return jsonify({'error': 'Missing name, date, or message'}), 400
+    
+    try:
+        birthday_date = datetime.fromisoformat(data['date']).date()
+        new_message = data['message'].strip()
+        
+        if not new_message:
+            return jsonify({'error': 'Message cannot be empty'}), 400
+        
+        # Update the message
+        success = birthday_service.update_message(data['name'], birthday_date, new_message)
+        
+        if success:
+            # Update cache to reflect the change
+            update_birthday_cache()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update message'}), 500
+            
+    except Exception as e:
+        logger.error(f"Failed to update message: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def start_scheduler():
     """Start the background scheduler"""
     global scheduler
