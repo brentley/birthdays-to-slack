@@ -3,7 +3,7 @@
 import os
 import json
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 import openai
@@ -53,6 +53,7 @@ The message should be:
         self.prompt_history_file = self.data_dir / "prompt_history.json"
         self.history_file = self.data_dir / "birthday_history.json"
         self.messages_file = self.data_dir / "generated_messages.json"
+        self.sent_messages_file = self.data_dir / "sent_messages.json"
         
         # Load prompt template and history
         self.prompt_template = self._load_prompt_template()
@@ -61,6 +62,7 @@ The message should be:
         # Load message history
         self.history = self._load_history()
         self.generated_messages = self._load_generated_messages()
+        self.sent_messages = self._load_sent_messages()
 
     def _load_prompt_template(self) -> str:
         """Load prompt template from current or default file."""
@@ -307,3 +309,47 @@ The message should be:
     def get_employee_history(self, employee_name: str) -> List[str]:
         """Get historical facts used for an employee."""
         return self.history.get(employee_name, [])
+    
+    def _load_sent_messages(self) -> Dict[str, Dict[str, Any]]:
+        """Load sent messages tracking."""
+        if self.sent_messages_file.exists():
+            try:
+                return json.loads(self.sent_messages_file.read_text())
+            except json.JSONDecodeError:
+                logger.error("Failed to load sent messages file, starting fresh")
+                return {}
+        return {}
+    
+    def _save_sent_messages(self):
+        """Save sent messages tracking."""
+        self.sent_messages_file.write_text(json.dumps(self.sent_messages, indent=2))
+    
+    def mark_message_sent(self, employee_name: str, birthday_date: date, message: str):
+        """Mark a message as sent to prevent duplicates."""
+        sent_key = f"{employee_name}_{birthday_date.isoformat()}_sent"
+        self.sent_messages[sent_key] = {
+            "message": message,
+            "sent_at": datetime.utcnow().isoformat(),
+            "employee_name": employee_name,
+            "birthday_date": birthday_date.isoformat()
+        }
+        self._save_sent_messages()
+    
+    def was_message_sent_today(self, employee_name: str, birthday_date: date) -> bool:
+        """Check if a message was already sent today for this person."""
+        sent_key = f"{employee_name}_{birthday_date.isoformat()}_sent"
+        if sent_key in self.sent_messages:
+            sent_data = self.sent_messages[sent_key]
+            sent_at = datetime.fromisoformat(sent_data["sent_at"])
+            # Check if sent within the last 24 hours
+            if datetime.utcnow() - sent_at < timedelta(hours=24):
+                return True
+        return False
+    
+    def clear_sent_tracking(self, employee_name: str, birthday_date: date):
+        """Clear sent tracking for a specific person/date to allow resending."""
+        sent_key = f"{employee_name}_{birthday_date.isoformat()}_sent"
+        if sent_key in self.sent_messages:
+            del self.sent_messages[sent_key]
+            self._save_sent_messages()
+            logger.info(f"Cleared sent tracking for {employee_name} on {birthday_date}")

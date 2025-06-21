@@ -138,10 +138,20 @@ class BirthdayService:
         
         for event in events:
             if event['will_send'] and event['message']:
+                # Check if message was already sent today
+                if self.message_generator and self.message_generator.was_message_sent_today(event['name'], target_date):
+                    logger.info(f"Skipping {event['name']} - message already sent today")
+                    continue
+                
                 try:
                     self.send_slack_message(event['message'])
                     sent_messages.append(event['message'])
                     logger.info(f"Sent birthday message for {event['name']}")
+                    
+                    # Mark message as sent
+                    if self.message_generator:
+                        self.message_generator.mark_message_sent(event['name'], target_date, event['message'])
+                        
                 except Exception as e:
                     logger.error(f"Failed to send birthday message for {event['name']}: {e}")
         

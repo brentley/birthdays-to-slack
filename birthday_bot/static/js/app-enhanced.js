@@ -160,6 +160,16 @@ async function regenerateMessage(name, date) {
     }
     
     try {
+        // First, clear the sent tracking to prevent duplicate message issues
+        await fetch('/api/clear-sent-tracking', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, date })
+        });
+        
+        // Then regenerate the message
         const response = await fetch('/api/regenerate-message', {
             method: 'POST',
             headers: {

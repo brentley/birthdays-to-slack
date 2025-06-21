@@ -84,11 +84,11 @@ def send_daily_birthdays():
         logger.info("Checking for today's birthdays...")
         today = datetime.now().date()
         
+        # Update cache first to ensure we have the latest messages
+        update_birthday_cache()
+        
         # Send birthday messages
         birthday_service.send_birthday_messages(today)
-        
-        # Update cache after sending messages
-        update_birthday_cache()
         
     except Exception as e:
         logger.error(f"Error sending daily birthdays: {e}")
@@ -270,6 +270,27 @@ def api_activate_prompt():
             return jsonify({'error': 'Prompt not found'}), 404
     except Exception as e:
         logger.error(f"Failed to activate prompt: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/clear-sent-tracking', methods=['POST'])
+def api_clear_sent_tracking():
+    """API endpoint to clear sent message tracking for a specific person/date"""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+    
+    data = request.get_json()
+    if not data or 'name' not in data or 'date' not in data:
+        return jsonify({'error': 'Missing name or date'}), 400
+    
+    try:
+        birthday_date = datetime.fromisoformat(data['date']).date()
+        if birthday_service.message_generator:
+            birthday_service.message_generator.clear_sent_tracking(data['name'], birthday_date)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Message generator not initialized'}), 503
+    except Exception as e:
+        logger.error(f"Failed to clear sent tracking: {e}")
         return jsonify({'error': str(e)}), 500
 
 def start_scheduler():
