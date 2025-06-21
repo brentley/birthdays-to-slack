@@ -37,7 +37,7 @@ jobs:
       
       - name: Upload coverage
         if: matrix.python-version == '3.11'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
 
   security:
     runs-on: ubuntu-latest
@@ -135,13 +135,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Build test image
-        run: docker build -t birthdays-to-slack-test .
-      
       - name: Run full test suite
         run: |
-          docker run --rm \
-            -e LDAP_SERVER=ldaps://ldap.google.com \
-            -e SEARCH_BASE=ou=Users,dc=visiquate,dc=com \
-            birthdays-to-slack-test \
-            python -m pytest tests/ -v
+          docker compose -f docker-compose.test.yml up --abort-on-container-exit
