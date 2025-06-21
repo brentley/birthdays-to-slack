@@ -181,7 +181,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/app-enhanced.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app-enhanced.js') }}?v={{ git_commit_short }}"></script>
 <script>
     // Initialize the birthday dashboard
     document.addEventListener('DOMContentLoaded', function() {

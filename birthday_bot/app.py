@@ -22,6 +22,13 @@ app = Flask(__name__,
             static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
 
+# Add context processor for git commit
+@app.context_processor
+def inject_git_commit():
+    return {
+        'git_commit_short': os.getenv('GIT_COMMIT_SHORT', 'unknown')
+    }
+
 # Track service start time
 START_TIME = time.time()
 
@@ -145,7 +152,7 @@ def health():
         'status': 'healthy',
         'service': os.getenv('SERVICE_NAME', 'birthdays-to-slack'),
         'version': os.getenv('VERSION', '1.0.0'),
-        'commit': os.getenv('GIT_COMMIT', 'unknown')[:7],
+        'commit': os.getenv('GIT_COMMIT_SHORT', 'unknown'),
         'build_date': os.getenv('BUILD_DATE', 'unknown'),
         'uptime': int(time.time() - START_TIME),
         'environment': os.getenv('ENVIRONMENT', 'production'),

@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}?v={{ git_commit_short }}" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation -->
@@ -38,7 +38,10 @@
     <!-- Footer -->
     <footer class="bg-light py-3 mt-5">
         <div class="container text-center text-muted">
-            <small>Birthday Bot - Automated birthday notifications</small>
+            <small>
+                Birthday Bot - Automated birthday notifications<br>
+                <span class="text-muted">Made with ❤️ by Brent • v{{ git_commit_short }}</span>
+            </small>
         </div>
     </footer>
 
@@ -46,7 +49,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ git_commit_short }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

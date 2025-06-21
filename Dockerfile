@@ -9,11 +9,13 @@ FROM python:3.11-slim
 
 # Add build arguments
 ARG GIT_COMMIT=unknown
+ARG GIT_COMMIT_SHORT=unknown
 ARG BUILD_DATE=unknown
 ARG VERSION=1.0.0
 
 # Set as environment variables
 ENV GIT_COMMIT=$GIT_COMMIT \
+    GIT_COMMIT_SHORT=$GIT_COMMIT_SHORT \
     BUILD_DATE=$BUILD_DATE \
     VERSION=$VERSION \
     PYTHONUNBUFFERED=1 \

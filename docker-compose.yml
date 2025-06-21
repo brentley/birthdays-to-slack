@@ -13,6 +13,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-production}
       # Build information
       - GIT_COMMIT=${GIT_COMMIT:-unknown}
+      - GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT:-unknown}
       - BUILD_DATE=${BUILD_DATE:-unknown}
       - VERSION=${VERSION:-1.0.0}
       # Service configuration
@@ -79,6 +80,7 @@ services:
       - ENVIRONMENT=development
       # Build information
       - GIT_COMMIT=development
+      - GIT_COMMIT_SHORT=dev
       - BUILD_DATE=development
       - VERSION=development
       # Service configuration
