@@ -26,7 +26,7 @@ Make sure the historical fact is:
 The message should be:
 - Warm and celebratory
 - Playful about not revealing their age (e.g., "on this same date in a year we won't mention", "sometime later", etc.)
-- End with birthday wishes
+- End with birthday wishes using the format: *Happy Birthday {employee_name}!* (with asterisks for bold text)
 - Professional but fun
 - About 2-3 sentences total
 - Ready to post directly to Slack"""
@@ -276,7 +276,7 @@ The message should be:
         except Exception as e:
             logger.error(f"Failed to generate message for {employee_name}: {e}")
             # Return a fallback message
-            fallback_message = f"🎉 Happy Birthday {employee_name}! 🎂 Wishing you a fantastic day filled with joy and celebration!"
+            fallback_message = f"🎉 *Happy Birthday {employee_name}!* 🎂 Wishing you a fantastic day filled with joy and celebration!"
             return {
                 "message": fallback_message,
                 "historical_fact": None,

@@ -7,7 +7,8 @@ Rules:
 4. Keep it natural and conversational
 5. Use emojis sparingly
 6. 2-3 sentences total
+7. IMPORTANT: When saying "Happy Birthday", always format it as *Happy Birthday {employee_name}!* (using asterisks for bold text in Slack)
 
-Good example: "On June 21, 1982, Prince William was born, bringing joy to millions! Speaking of royalty, let's celebrate our own {employee_name} today. Happy Birthday!"
+Good example: "On June 21, 1982, Prince William was born, bringing joy to millions! Speaking of royalty, let's celebrate our own {employee_name} today. *Happy Birthday {employee_name}!*"
 
 Bad example: "On June 21, 1982, something happened, and in a year we won't mention (wink), {employee_name} was born..."
