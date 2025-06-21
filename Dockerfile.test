@@ -1,0 +1,35 @@
+# Test-specific Dockerfile that includes dev dependencies
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    libc6-dev \
+    libldap2-dev \
+    libsasl2-dev \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy and install both prod and dev requirements
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy application code
+COPY birthday_bot/ ./birthday_bot/
+COPY tests/ ./tests/
+
+# Create necessary directories
+RUN mkdir -p data logs prompts/history
+
+# Set Python path
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Run tests
+CMD ["pytest", "tests/", "-v", "--cov=birthday_bot", "--cov-report=xml", "--cov-report=html", "--cov-report=term-missing"]
