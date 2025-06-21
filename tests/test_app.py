@@ -62,7 +62,7 @@ class TestFlaskApp:
         assert '2024-03-15' in data
         assert data['2024-03-15']['day_of_week'] == 'Friday'
 
-    @patch.dict(os.environ, {'SLACK_NOTIFICATIONS_ENABLED': 'true'})
+    @patch.dict(os.environ, {'SLACK_NOTIFICATIONS_ENABLED': 'true', 'BIRTHDAY_LOOK_AHEAD_DAYS': '15'})
     def test_api_status_slack_enabled(self, client):
         """Test status API with Slack notifications enabled."""
         mock_service = Mock()
@@ -76,6 +76,7 @@ class TestFlaskApp:
         assert data['status'] == 'running'
         assert data['slack_notifications_enabled'] is True
         assert data['service_initialized'] is True
+        assert data['look_ahead_days'] == 15
 
     @patch.dict(os.environ, {'SLACK_NOTIFICATIONS_ENABLED': 'false'})
     def test_api_status_slack_disabled(self, client):
@@ -91,6 +92,7 @@ class TestFlaskApp:
         assert data['service_initialized'] is False
 
     @patch('birthday_bot.app.birthday_service')
+    @patch.dict(os.environ, {'BIRTHDAY_LOOK_AHEAD_DAYS': '21'})
     def test_update_birthday_cache_success(self, mock_service):
         """Test successful birthday cache update."""
         mock_service.get_birthday_events_for_date.return_value = [
