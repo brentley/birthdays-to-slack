@@ -106,6 +106,7 @@ class BirthdayManager {
         const statusElement = document.getElementById('service-status');
         const slackStatusElement = document.getElementById('slack-status');
         const lastUpdatedElement = document.getElementById('last-updated');
+        const scheduleTitleElement = document.getElementById('schedule-title');
         
         if (statusElement) {
             let statusHtml = '';
@@ -134,6 +135,10 @@ class BirthdayManager {
                 slackStatusElement.innerHTML = '<i class="bi bi-bell-slash-fill text-warning"></i> <span>Disabled</span>';
                 slackStatusElement.className = 'status-value text-warning';
             }
+        }
+        
+        if (scheduleTitleElement && data.look_ahead_days !== undefined) {
+            scheduleTitleElement.textContent = `Next ${data.look_ahead_days} Days Schedule`;
         }
         
         if (lastUpdatedElement && data.last_updated) {

@@ -10,7 +10,7 @@ A long-running service that automatically sends birthday notifications to Slack 
 - **Message History**: Tracks historical facts used to ensure variety year-over-year
 - **Message Preview & Regeneration**: Preview all messages 21 days in advance and regenerate if needed
 - **LDAP Validation**: Verifies users exist in LDAP before sending notifications
-- **Web Dashboard**: Responsive web interface showing upcoming birthdays for the next 21 days
+- **Web Dashboard**: Responsive web interface showing upcoming birthdays (configurable look-ahead period)
 - **Editable Prompt Template**: Customize the AI prompt template through the web interface
 - **Light/Dark Theme**: Automatic theme detection based on browser preferences
 - **Mobile Friendly**: Responsive design that works on all devices
@@ -114,7 +114,7 @@ make shell
 The web dashboard provides:
 
 - **Service Status**: Real-time monitoring of the birthday bot service
-- **Upcoming Birthdays**: Next 21 days of birthday events
+- **Upcoming Birthdays**: Configurable look-ahead period (default 30 days)
 - **LDAP Validation**: Shows which events will be sent vs. skipped
 - **Statistics**: Total, valid, and skipped events count
 - **Responsive Design**: Works on desktop, tablet, and mobile
@@ -171,6 +171,7 @@ The web dashboard provides:
 | `PORT` | Web server port | `5000` |
 | `FLASK_ENV` | Flask environment | `production` |
 | `SLACK_NOTIFICATIONS_ENABLED` | Enable/disable Slack notifications | `false` |
+| `BIRTHDAY_LOOK_AHEAD_DAYS` | Number of days to look ahead for birthdays | `30` |
 | `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare tunnel token for secure access | Optional |
 
 ## Docker Services

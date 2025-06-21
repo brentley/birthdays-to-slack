@@ -43,7 +43,7 @@ def initialize_service():
     )
 
 def update_birthday_cache():
-    """Update the cached birthday data for the next 21 days"""
+    """Update the cached birthday data for the configured look-ahead period"""
     global birthday_cache
     
     if not birthday_service:
@@ -53,9 +53,12 @@ def update_birthday_cache():
     try:
         logger.info("Updating birthday cache...")
         
-        # Get events for the next 21 days
+        # Get look-ahead days from environment variable (default 30)
+        look_ahead_days = int(os.getenv('BIRTHDAY_LOOK_AHEAD_DAYS', '30'))
+        
+        # Get events for the configured period
         today = datetime.now().date()
-        end_date = today + timedelta(days=21)
+        end_date = today + timedelta(days=look_ahead_days)
         
         new_cache = {}
         
@@ -69,7 +72,7 @@ def update_birthday_cache():
         with cache_lock:
             birthday_cache = new_cache
             
-        logger.info(f"Birthday cache updated with {len(new_cache)} days of events")
+        logger.info(f"Birthday cache updated with {len(new_cache)} days of events (look-ahead: {look_ahead_days} days)")
         
     except Exception as e:
         logger.error(f"Error updating birthday cache: {e}")
@@ -118,13 +121,15 @@ def api_birthdays():
 def api_status():
     """API endpoint to get service status"""
     slack_enabled = os.getenv('SLACK_NOTIFICATIONS_ENABLED', 'false').lower() == 'true'
+    look_ahead_days = int(os.getenv('BIRTHDAY_LOOK_AHEAD_DAYS', '30'))
     
     status_data = {
         'status': 'running',
         'service_initialized': birthday_service is not None,
         'cache_size': len(birthday_cache),
         'last_updated': datetime.utcnow().isoformat() + 'Z',
-        'slack_notifications_enabled': slack_enabled
+        'slack_notifications_enabled': slack_enabled,
+        'look_ahead_days': look_ahead_days
     }
     
     if birthday_service:

@@ -24,6 +24,7 @@ services:
       - FLASK_ENV=production
       - PORT=5000
       - SLACK_NOTIFICATIONS_ENABLED=${SLACK_NOTIFICATIONS_ENABLED:-false}
+      - BIRTHDAY_LOOK_AHEAD_DAYS=${BIRTHDAY_LOOK_AHEAD_DAYS:-30}
     env_file:
       - .env
     volumes:
@@ -89,6 +90,7 @@ services:
       - FLASK_ENV=development
       - PORT=5000
       - SLACK_NOTIFICATIONS_ENABLED=${SLACK_NOTIFICATIONS_ENABLED:-false}
+      - BIRTHDAY_LOOK_AHEAD_DAYS=${BIRTHDAY_LOOK_AHEAD_DAYS:-30}
     env_file:
       - .env
     volumes:
