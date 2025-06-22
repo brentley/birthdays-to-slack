@@ -18,6 +18,146 @@ if (typeof formatTime === 'undefined') {
 
 // Extended BirthdayManager for OpenAI features
 class EnhancedBirthdayManager extends BirthdayManager {
+    constructor() {
+        super();
+        this.autoRefreshInterval = null;
+        this.lastUpdateTime = Date.now();
+    }
+    
+    // Start auto-refresh of birthday data
+    startAutoRefresh(intervalMinutes = 60) {
+        // Clear any existing interval
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+        
+        // Set up new interval (default 1 hour)
+        this.autoRefreshInterval = setInterval(() => {
+            this.refreshBirthdayData();
+        }, intervalMinutes * 60 * 1000);
+        
+        console.log(`Auto-refresh enabled: updating every ${intervalMinutes} minutes`);
+    }
+    
+    // Stop auto-refresh
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            console.log('Auto-refresh disabled');
+        }
+    }
+    
+    // Refresh birthday data without page reload
+    async refreshBirthdayData() {
+        try {
+            console.log('Refreshing birthday data...');
+            
+            // Show loading indicator
+            const birthdayList = document.getElementById('birthday-list');
+            if (birthdayList) {
+                birthdayList.style.opacity = '0.6';
+            }
+            
+            // Fetch latest data
+            const response = await fetch('/api/birthdays');
+            if (!response.ok) throw new Error('Failed to fetch birthdays');
+            
+            const data = await response.json();
+            
+            // Update the display
+            this.displayBirthdays(data);
+            
+            // Update last refresh time
+            this.lastUpdateTime = Date.now();
+            this.updateLastRefreshDisplay();
+            
+            // Show success notification
+            this.showNotification('Birthday data refreshed', 'success');
+            
+            if (birthdayList) {
+                birthdayList.style.opacity = '1';
+            }
+        } catch (error) {
+            console.error('Error refreshing birthday data:', error);
+            this.showNotification('Failed to refresh birthday data', 'error');
+            
+            if (birthdayList) {
+                birthdayList.style.opacity = '1';
+            }
+        }
+    }
+    
+    // Update last refresh time display
+    updateLastRefreshDisplay() {
+        const refreshDisplay = document.getElementById('last-refresh-time');
+        if (refreshDisplay) {
+            const now = new Date(this.lastUpdateTime);
+            refreshDisplay.textContent = `Last updated: ${formatTime(now)}`;
+        }
+    }
+    
+    // Show notification
+    showNotification(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+    
+    // Display birthdays data
+    displayBirthdays(data) {
+        const birthdayList = document.getElementById('birthday-list');
+        if (!birthdayList) return;
+        
+        // Clear existing content
+        birthdayList.innerHTML = '';
+        
+        // Sort dates
+        const sortedDates = Object.keys(data).sort();
+        
+        if (sortedDates.length === 0) {
+            birthdayList.innerHTML = '<div class="alert alert-info">No upcoming birthdays found.</div>';
+            return;
+        }
+        
+        // Render each date's birthdays
+        sortedDates.forEach(dateStr => {
+            const dateData = data[dateStr];
+            const dateCard = document.createElement('div');
+            dateCard.className = 'birthday-date-card mb-3';
+            
+            const dateHeader = document.createElement('h5');
+            dateHeader.className = 'date-header';
+            dateHeader.innerHTML = `
+                <i class="bi bi-calendar-event"></i>
+                ${new Date(dateStr).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+            `;
+            dateCard.appendChild(dateHeader);
+            
+            const eventsList = document.createElement('div');
+            eventsList.className = 'events-list';
+            
+            dateData.events.forEach(event => {
+                const eventDiv = document.createElement('div');
+                eventDiv.className = 'birthday-event';
+                eventDiv.innerHTML = this.renderBirthdayEvent(event);
+                eventsList.appendChild(eventDiv);
+            });
+            
+            dateCard.appendChild(eventsList);
+            birthdayList.appendChild(dateCard);
+        });
+    }
     updateServiceStatusDisplay(data) {
         super.updateServiceStatusDisplay(data);
         
@@ -398,5 +538,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Replace with enhanced manager
     window.birthdayManager = new EnhancedBirthdayManager();
     
+    // Start auto-refresh (1 hour intervals)
+    window.birthdayManager.startAutoRefresh(60);
+    
+    // Add manual refresh button functionality
+    const refreshButton = document.getElementById('refresh-birthdays-btn');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', () => {
+            window.birthdayManager.refreshBirthdayData();
+        });
+    }
+    
+    // Add refresh controls to the page if not present
+    const controlsContainer = document.querySelector('.controls-container') || document.querySelector('.card-body');
+    if (controlsContainer && !document.getElementById('refresh-controls')) {
+        const refreshControls = document.createElement('div');
+        refreshControls.id = 'refresh-controls';
+        refreshControls.className = 'mt-3 d-flex align-items-center gap-3';
+        refreshControls.innerHTML = `
+            <button id="refresh-birthdays-btn" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Now
+            </button>
+            <small id="last-refresh-time" class="text-muted">Loading...</small>
+            <small class="text-muted">(Auto-refreshes hourly)</small>
+        `;
+        controlsContainer.appendChild(refreshControls);
+        
+        // Add event listener to the newly created button
+        document.getElementById('refresh-birthdays-btn').addEventListener('click', () => {
+            window.birthdayManager.refreshBirthdayData();
+        });
+    }
+    
+    // Update the initial refresh time
+    window.birthdayManager.updateLastRefreshDisplay();
+    
     console.log('Birthday Bot Dashboard with OpenAI support initialized');
+    console.log('Auto-refresh enabled: data will update every 60 minutes');
 });
