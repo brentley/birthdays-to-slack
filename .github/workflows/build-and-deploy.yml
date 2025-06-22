@@ -118,20 +118,6 @@ jobs:
         id: short-sha
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       
-      - name: Create version.json
-        run: |
-          cat > version.json << EOF
-          {
-            "git_commit": "${{ github.sha }}",
-            "git_commit_short": "${{ steps.short-sha.outputs.sha_short }}",
-            "build_date": "${{ github.event.head_commit.timestamp }}",
-            "version": "${{ github.ref_name }}",
-            "build_number": "${{ github.run_number }}",
-            "workflow_run": "${{ github.run_id }}"
-          }
-          EOF
-          echo "Created version.json with commit ${{ steps.short-sha.outputs.sha_short }}"
-      
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
