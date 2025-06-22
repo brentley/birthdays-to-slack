@@ -45,6 +45,9 @@ COPY --chown=appuser:appuser birthday_bot/ ./birthday_bot/
 RUN mkdir -p data logs prompts/history && \
     chown -R appuser:appuser /app
 
+# Copy version info file (created by CI/CD)
+COPY --chown=root:root version.json /version.json
+
 # Update PATH
 ENV PATH=/home/appuser/.local/bin:$PATH
 

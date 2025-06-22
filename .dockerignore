@@ -56,6 +56,9 @@ deploy/
 *.bak
 *~
 
+# Version file (will be created by CI)
+version.json
+
 # Build artifacts
 build/
 dist/

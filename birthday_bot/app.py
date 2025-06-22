@@ -22,11 +22,31 @@ app = Flask(__name__,
             static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
 
+# Function to get version info
+def _get_version_info():
+    """Read version info from version.json file."""
+    try:
+        with open('/version.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to environment variables for backwards compatibility
+        return {
+            'git_commit_short': os.getenv('GIT_COMMIT_SHORT', 'unknown'),
+            'git_commit': os.getenv('GIT_COMMIT', 'unknown'),
+            'build_date': os.getenv('BUILD_DATE', 'unknown'),
+            'version': os.getenv('VERSION', '1.0.0'),
+            'build_number': '0',
+            'workflow_run': '0'
+        }
+
+# Load version info once at startup
+VERSION_INFO = _get_version_info()
+
 # Add context processor for git commit
 @app.context_processor
 def inject_git_commit():
     return {
-        'git_commit_short': os.getenv('GIT_COMMIT_SHORT', 'unknown')
+        'git_commit_short': VERSION_INFO['git_commit_short']
     }
 
 # Track service start time
@@ -151,9 +171,9 @@ def health():
     health_status = {
         'status': 'healthy',
         'service': os.getenv('SERVICE_NAME', 'birthdays-to-slack'),
-        'version': os.getenv('VERSION', '1.0.0'),
-        'commit': os.getenv('GIT_COMMIT_SHORT', 'unknown'),
-        'build_date': os.getenv('BUILD_DATE', 'unknown'),
+        'version': VERSION_INFO['version'],
+        'commit': VERSION_INFO['git_commit_short'],
+        'build_date': VERSION_INFO['build_date'],
         'uptime': int(time.time() - START_TIME),
         'environment': os.getenv('ENVIRONMENT', 'production'),
         'checks': {}
