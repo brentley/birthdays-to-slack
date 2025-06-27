@@ -136,15 +136,6 @@
     </div>
 </div>
 
-<!-- Auto-refresh notice -->
-<div class="row mt-2">
-    <div class="col-12 text-center">
-        <small class="text-muted">
-            <i class="bi bi-arrow-clockwise"></i>
-            Data refreshes automatically every 30 seconds
-        </small>
-    </div>
-</div>
 
 <!-- Prompt Template Modal -->
 <div class="modal fade" id="promptModal" tabindex="-1" aria-labelledby="promptModalLabel" aria-hidden="true">
@@ -188,11 +179,8 @@
         loadBirthdayData();
         loadServiceStatus();
         
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadBirthdayData();
-            loadServiceStatus();
-        }, 30000);
+        // Note: Auto-refresh is handled by EnhancedBirthdayManager (every 60 minutes)
+        // Status updates only refresh non-disruptive elements
     });
 </script>
 

@@ -234,7 +234,7 @@ class BirthdayManager {
         }
         
         return `
-            <div class="birthday-day ${todayClass}">
+            <div class="birthday-day ${todayClass}" data-date="${dayData.date}">
                 <div class="birthday-day-header">
                     <div class="birthday-day-date">${formattedDate}</div>
                     <div class="birthday-day-name">${dayData.day_of_week}</div>
