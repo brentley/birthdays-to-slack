@@ -21,7 +21,10 @@
       "Bash(find:*)",
       "Bash(docker compose:*)",
       "Bash(lsof:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)"
     ],
     "deny": []
   }
