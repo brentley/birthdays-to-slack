@@ -22,6 +22,8 @@ class EnhancedBirthdayManager extends BirthdayManager {
         super();
         this.autoRefreshInterval = null;
         this.lastUpdateTime = Date.now();
+        this.currentBirthdayData = {};
+        this.editStates = new Map(); // Track which messages are being edited
     }
     
     // Start auto-refresh of birthday data
@@ -53,39 +55,245 @@ class EnhancedBirthdayManager extends BirthdayManager {
         try {
             console.log('Refreshing birthday data...');
             
-            // Show loading indicator
-            const birthdayList = document.getElementById('birthday-list');
-            if (birthdayList) {
-                birthdayList.style.opacity = '0.6';
-            }
-            
             // Fetch latest data
             const response = await fetch('/api/birthdays');
             if (!response.ok) throw new Error('Failed to fetch birthdays');
             
-            const data = await response.json();
+            const newData = await response.json();
             
-            // Update the display
-            this.displayBirthdays(data);
+            // Update the display with smart updates
+            this.smartUpdateBirthdays(newData);
             
             // Update last refresh time
             this.lastUpdateTime = Date.now();
             this.updateLastRefreshDisplay();
             
-            // Show success notification
-            this.showNotification('Birthday data refreshed', 'success');
+            // Update statistics without disrupting the UI
+            this.updateStatistics();
             
-            if (birthdayList) {
-                birthdayList.style.opacity = '1';
-            }
         } catch (error) {
             console.error('Error refreshing birthday data:', error);
             this.showNotification('Failed to refresh birthday data', 'error');
+        }
+    }
+    
+    // Smart update that only changes what's different
+    smartUpdateBirthdays(newData) {
+        const birthdaySchedule = document.getElementById('birthday-schedule');
+        if (!birthdaySchedule) {
+            // Fallback to full render if container not found
+            this.birthdayData = newData;
+            this.renderBirthdaySchedule();
+            return;
+        }
+        
+        // Store edit states before update
+        this.preserveEditStates();
+        
+        // Compare and update only changed elements
+        const oldDates = Object.keys(this.currentBirthdayData);
+        const newDates = Object.keys(newData);
+        const allDates = new Set([...oldDates, ...newDates]);
+        
+        allDates.forEach(dateStr => {
+            const oldDateData = this.currentBirthdayData[dateStr];
+            const newDateData = newData[dateStr];
             
-            if (birthdayList) {
-                birthdayList.style.opacity = '1';
+            if (!oldDateData && newDateData) {
+                // New date added
+                this.addDateSection(dateStr, newDateData);
+            } else if (oldDateData && !newDateData) {
+                // Date removed
+                this.removeDateSection(dateStr);
+            } else if (oldDateData && newDateData) {
+                // Date exists, check for changes
+                this.updateDateSection(dateStr, oldDateData, newDateData);
+            }
+        });
+        
+        // Update stored data
+        this.currentBirthdayData = JSON.parse(JSON.stringify(newData));
+        this.birthdayData = newData;
+        
+        // Restore edit states
+        this.restoreEditStates();
+    }
+    
+    // Preserve the state of any messages being edited
+    preserveEditStates() {
+        this.editStates.clear();
+        const editContainers = document.querySelectorAll('.message-edit-container');
+        editContainers.forEach(container => {
+            if (container.style.display !== 'none') {
+                const textarea = container.querySelector('textarea');
+                const key = container.id;
+                this.editStates.set(key, {
+                    visible: true,
+                    value: textarea ? textarea.value : ''
+                });
+            }
+        });
+    }
+    
+    // Restore edit states after update
+    restoreEditStates() {
+        this.editStates.forEach((state, key) => {
+            const editContainer = document.getElementById(key);
+            const messageContainer = key.replace('edit-', 'message-');
+            const messageDiv = document.getElementById(messageContainer);
+            
+            if (editContainer && state.visible) {
+                editContainer.style.display = 'block';
+                if (messageDiv) messageDiv.style.display = 'none';
+                
+                const textarea = editContainer.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = state.value;
+                }
+            }
+        });
+    }
+    
+    // Add a new date section
+    addDateSection(dateStr, dateData) {
+        const container = document.getElementById('birthday-schedule');
+        if (!container) return;
+        
+        const isToday = dateStr === new Date().toISOString().split('T')[0];
+        const newSection = document.createElement('div');
+        newSection.innerHTML = this.renderBirthdayDayEnhanced(dateData, isToday);
+        
+        // Find correct position to insert (maintain date order)
+        const existingSections = container.querySelectorAll('.birthday-day');
+        let inserted = false;
+        
+        existingSections.forEach(section => {
+            if (!inserted) {
+                const sectionDate = section.getAttribute('data-date');
+                if (sectionDate && sectionDate > dateStr) {
+                    container.insertBefore(newSection.firstChild, section);
+                    inserted = true;
+                }
+            }
+        });
+        
+        if (!inserted) {
+            container.appendChild(newSection.firstChild);
+        }
+        
+        // Highlight new section
+        this.highlightElement(newSection.firstChild);
+    }
+    
+    // Remove a date section
+    removeDateSection(dateStr) {
+        const sections = document.querySelectorAll('.birthday-day');
+        sections.forEach(section => {
+            if (section.getAttribute('data-date') === dateStr) {
+                section.style.transition = 'opacity 0.3s';
+                section.style.opacity = '0';
+                setTimeout(() => section.remove(), 300);
+            }
+        });
+    }
+    
+    // Update existing date section
+    updateDateSection(dateStr, oldData, newData) {
+        // Deep comparison of events
+        const eventsChanged = JSON.stringify(oldData.events) !== JSON.stringify(newData.events);
+        
+        if (eventsChanged) {
+            const section = document.querySelector(`.birthday-day[data-date="${dateStr}"]`);
+            if (section) {
+                const eventsContainer = section.querySelector('.birthday-events');
+                if (eventsContainer) {
+                    // Update individual events
+                    this.updateEvents(eventsContainer, oldData.events || [], newData.events || []);
+                }
             }
         }
+    }
+    
+    // Update individual events within a date
+    updateEvents(container, oldEvents, newEvents) {
+        const oldEventMap = new Map(oldEvents.map(e => [e.name, e]));
+        const newEventMap = new Map(newEvents.map(e => [e.name, e]));
+        
+        // Remove events that no longer exist
+        oldEvents.forEach(event => {
+            if (!newEventMap.has(event.name)) {
+                const eventEl = container.querySelector(`[data-name="${CSS.escape(event.name)}"]`);
+                if (eventEl) {
+                    eventEl.style.transition = 'opacity 0.3s';
+                    eventEl.style.opacity = '0';
+                    setTimeout(() => eventEl.remove(), 300);
+                }
+            }
+        });
+        
+        // Add or update events
+        newEvents.forEach((event, index) => {
+            const oldEvent = oldEventMap.get(event.name);
+            const eventEl = container.querySelector(`[data-name="${CSS.escape(event.name)}"]`);
+            
+            if (!oldEvent) {
+                // New event
+                const newEventEl = document.createElement('div');
+                newEventEl.innerHTML = this.renderBirthdayEvent(event);
+                container.appendChild(newEventEl.firstChild);
+                this.highlightElement(newEventEl.firstChild);
+            } else if (JSON.stringify(oldEvent) !== JSON.stringify(event)) {
+                // Event changed
+                if (eventEl) {
+                    // Preserve edit state if editing
+                    const editKey = `edit-${event.name.replace(/\s+/g, '-')}-${event.date}`;
+                    const isEditing = this.editStates.has(editKey);
+                    
+                    if (!isEditing) {
+                        const newEventEl = document.createElement('div');
+                        newEventEl.innerHTML = this.renderBirthdayEvent(event);
+                        eventEl.replaceWith(newEventEl.firstChild);
+                        this.highlightElement(newEventEl.firstChild);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Highlight element to show it was updated
+    highlightElement(element) {
+        if (!element) return;
+        
+        element.style.transition = 'background-color 0.5s';
+        element.style.backgroundColor = 'rgba(17, 109, 248, 0.1)';
+        
+        setTimeout(() => {
+            element.style.backgroundColor = '';
+        }, 2000);
+    }
+    
+    // Enhanced render method with data-date attribute
+    renderBirthdayDayEnhanced(dayData, isToday = false) {
+        const formattedDate = formatDate(dayData.date);
+        
+        const todayClass = isToday ? 'today' : '';
+        
+        let eventsHtml = '';
+        for (const event of dayData.events) {
+            eventsHtml += this.renderBirthdayEvent(event);
+        }
+        
+        return `
+            <div class="birthday-day ${todayClass}" data-date="${dayData.date}">
+                <div class="birthday-day-header">
+                    <div class="birthday-day-date">${formattedDate}</div>
+                    <div class="birthday-day-name">${dayData.day_of_week}</div>
+                </div>
+                <div class="birthday-events">
+                    ${eventsHtml}
+                </div>
+            </div>
+        `;
     }
     
     // Update last refresh time display
@@ -116,6 +324,10 @@ class EnhancedBirthdayManager extends BirthdayManager {
     
     // Display birthdays data
     displayBirthdays(data) {
+        // Store the initial data
+        this.currentBirthdayData = JSON.parse(JSON.stringify(data));
+        this.birthdayData = data;
+        
         const birthdayList = document.getElementById('birthday-list');
         if (!birthdayList) return;
         
@@ -574,5 +786,5 @@ document.addEventListener('DOMContentLoaded', function() {
     window.birthdayManager.updateLastRefreshDisplay();
     
     console.log('Birthday Bot Dashboard with OpenAI support initialized');
-    console.log('Auto-refresh enabled: data will update every 60 minutes');
+    console.log('Auto-refresh enabled: data will update every 60 minutes without disrupting edits');
 });
