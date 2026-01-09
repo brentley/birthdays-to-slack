@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   birthdays-to-slack:
-    image: ghcr.io/visiquate/birthdays-to-slack:latest
+    image: ghcr.io/brentley/birthdays-to-slack:latest
     container_name: birthdays-to-slack
     ports:
       - "5002:5000"
