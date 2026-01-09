@@ -72,3 +72,4 @@ Thumbs.db
 # Legacy files
 client_secret_*
 credentials.json
+.env.backup/

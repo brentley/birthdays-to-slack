@@ -52,6 +52,21 @@
     color: var(--bs-body-color) !important;
 }
 
+/* Fix: message-preview dark mode text color */
+[data-theme="dark"] .message-preview {
+    color: #adb5bd !important;
+}
+
+/* Fix: birthday-event-details dark mode text color */
+[data-theme="dark"] .birthday-event-details {
+    color: #adb5bd !important;
+}
+
+/* Fix: Legend card small text in dark mode */
+[data-theme="dark"] .card.bg-light small {
+    color: var(--bs-body-color) !important;
+}
+
 /* Theme Toggle Button */
 .theme-icon-light,
 .theme-icon-dark,

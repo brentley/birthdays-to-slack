@@ -26,29 +26,25 @@ A long-running service that automatically sends birthday notifications to Slack 
 
 ## Quick Start
 
-1. Clone the repository:
-   ```bash
-   git clone [repository URL]
-   cd birthdays-to-slack
-   ```
+```bash
+# 1. Clone repository
+git clone [repository URL]
+cd birthdays-to-slack
 
-2. Copy and configure environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your actual values
-   ```
+# 2. Copy and configure environment variables
+cp .env.example .env
+# Edit .env with your actual values
 
-3. Start the service:
-   ```bash
-   make build
-   make up
-   ```
+# 3. Start the service
+make build
+make up
 
-4. Access the dashboard at: http://localhost:5000
+# 4. Access dashboard at http://localhost:5000
+```
 
 ## Configuration
 
-Edit `.env` with your settings:
+Edit `.env` directly with your actual values:
 
 ```bash
 # ICS calendar URL containing birthday events
@@ -84,6 +80,8 @@ ssh ec2-user@18.118.142.110
 cd birthdays-to-slack/
 ./deploy.sh
 ```
+
+Watchtower automatically monitors the deployed image tags and pulls the latest version. When you push an update with the `:latest` tag, Watchtower will detect the new image, pull it, and restart the service automatically without manual intervention.
 
 ### Development Mode
 

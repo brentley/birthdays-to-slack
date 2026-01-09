@@ -24,7 +24,8 @@
       "Bash(gh api:*)",
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

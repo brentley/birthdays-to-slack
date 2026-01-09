@@ -15,6 +15,9 @@
                 <button class="btn btn-sm btn-outline-info me-2" id="historyPromptBtn" style="display:none;" onclick="showPromptHistory()">
                     <i class="bi bi-clock-history"></i> History
                 </button>
+                <button class="btn btn-sm btn-outline-secondary me-2" onclick="showAliasModal()">
+                    <i class="bi bi-person-badge"></i> Aliases
+                </button>
                 <small class="text-muted" id="last-updated">Loading...</small>
             </div>
         </div>
@@ -202,6 +205,93 @@
                 </div>
                 <div id="promptHistoryList">
                     <!-- History items will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alias Management Modal -->
+<div class="modal fade" id="aliasModal" tabindex="-1" aria-labelledby="aliasModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aliasModalLabel">
+                    <i class="bi bi-person-badge"></i>
+                    Name Alias Management
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Map calendar names to display names for LDAP lookup. The LDAP uid is auto-generated from the display name.
+                </div>
+
+                <!-- Add New Alias Form -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Add New Alias</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label for="newCalendarName" class="form-label">Calendar Name</label>
+                                <input type="text" class="form-control" id="newCalendarName" placeholder="Johnny Doe">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="newDisplayName" class="form-label">Display Name</label>
+                                <input type="text" class="form-control" id="newDisplayName" placeholder="John Doe">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="newAliasNotes" class="form-label">Notes</label>
+                                <input type="text" class="form-control" id="newAliasNotes" placeholder="Optional">
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="addAlias()" title="Add Alias">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                LDAP uid preview: <code id="ldapUidPreview">-</code>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Existing Aliases List -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Existing Aliases</h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadAliases()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Calendar Name</th>
+                                        <th>Display Name</th>
+                                        <th>LDAP uid</th>
+                                        <th>Notes</th>
+                                        <th style="width: 100px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="aliasTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

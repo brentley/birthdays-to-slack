@@ -17,7 +17,7 @@ from birthday_bot.service import BirthdayService
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, 
+app = Flask(__name__,
             template_folder='templates',
             static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
@@ -287,11 +287,11 @@ def api_activate_prompt():
     """API endpoint to activate a prompt from history"""
     if not birthday_service:
         return jsonify({'error': 'Service not initialized'}), 503
-    
+
     data = request.get_json()
     if not data or 'prompt_id' not in data:
         return jsonify({'error': 'Missing prompt_id'}), 400
-    
+
     try:
         success = birthday_service.activate_prompt_from_history(data['prompt_id'])
         if success:
@@ -309,11 +309,11 @@ def api_clear_sent_tracking():
     """API endpoint to clear sent message tracking for a specific person/date"""
     if not birthday_service:
         return jsonify({'error': 'Service not initialized'}), 503
-    
+
     data = request.get_json()
     if not data or 'name' not in data or 'date' not in data:
         return jsonify({'error': 'Missing name or date'}), 400
-    
+
     try:
         birthday_date = datetime.fromisoformat(data['date']).date()
         if birthday_service.message_generator:
@@ -330,30 +330,110 @@ def api_update_message():
     """API endpoint to update a birthday message"""
     if not birthday_service:
         return jsonify({'error': 'Service not initialized'}), 503
-    
+
     data = request.get_json()
     if not data or 'name' not in data or 'date' not in data or 'message' not in data:
         return jsonify({'error': 'Missing name, date, or message'}), 400
-    
+
     try:
         birthday_date = datetime.fromisoformat(data['date']).date()
         new_message = data['message'].strip()
-        
+
         if not new_message:
             return jsonify({'error': 'Message cannot be empty'}), 400
-        
+
         # Update the message
         success = birthday_service.update_message(data['name'], birthday_date, new_message)
-        
+
         if success:
             # Update cache to reflect the change
             update_birthday_cache()
             return jsonify({'success': True})
         else:
             return jsonify({'error': 'Failed to update message'}), 500
-            
+
     except Exception as e:
         logger.error(f"Failed to update message: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
+# Alias Management API Endpoints
+# =============================================================================
+
+@app.route('/api/aliases', methods=['GET'])
+def api_get_aliases():
+    """API endpoint to get all aliases."""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+
+    aliases = birthday_service.get_aliases()
+    return jsonify({'aliases': aliases})
+
+@app.route('/api/aliases', methods=['POST'])
+def api_add_alias():
+    """API endpoint to add a new alias."""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+
+    data = request.get_json()
+    if not data or 'calendar_name' not in data or 'display_name' not in data:
+        return jsonify({'error': 'Missing calendar_name or display_name'}), 400
+
+    try:
+        alias = birthday_service.add_alias(
+            data['calendar_name'],
+            data['display_name'],
+            data.get('notes', '')
+        )
+
+        # Refresh cache to pick up changes
+        update_birthday_cache()
+
+        return jsonify({'success': True, 'alias': alias})
+    except Exception as e:
+        logger.error(f"Error adding alias: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/aliases/<path:calendar_name>', methods=['PUT'])
+def api_update_alias(calendar_name: str):
+    """API endpoint to update an alias."""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+
+    data = request.get_json()
+    if not data or 'display_name' not in data:
+        return jsonify({'error': 'Missing display_name'}), 400
+
+    try:
+        alias = birthday_service.update_alias(
+            calendar_name,
+            data['display_name'],
+            data.get('notes')
+        )
+
+        if alias:
+            update_birthday_cache()
+            return jsonify({'success': True, 'alias': alias})
+        else:
+            return jsonify({'error': 'Alias not found'}), 404
+    except Exception as e:
+        logger.error(f"Error updating alias: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/aliases/<path:calendar_name>', methods=['DELETE'])
+def api_delete_alias(calendar_name: str):
+    """API endpoint to delete an alias."""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+
+    try:
+        if birthday_service.delete_alias(calendar_name):
+            update_birthday_cache()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Alias not found'}), 404
+    except Exception as e:
+        logger.error(f"Error deleting alias: {e}")
         return jsonify({'error': str(e)}), 500
 
 def start_scheduler():

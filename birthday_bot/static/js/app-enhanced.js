@@ -16,6 +16,18 @@ if (typeof formatTime === 'undefined') {
     };
 }
 
+// VisiQuate standard time formatting function
+const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+    });
+};
+
 // Extended BirthdayManager for OpenAI features
 class EnhancedBirthdayManager extends BirthdayManager {
     constructor() {
@@ -396,13 +408,19 @@ class EnhancedBirthdayManager extends BirthdayManager {
         const statusClass = event.ldap_valid ? 'status-valid' : 'status-invalid';
         const statusIcon = event.ldap_valid ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
         const statusText = event.ldap_valid ? 'Will send notification' : 'Skipped (not in LDAP)';
-        
+
+        // Alias indicator
+        let aliasIndicator = '';
+        if (event.has_alias) {
+            aliasIndicator = `<span class="badge bg-info ms-2" title="Aliased from: ${this.escapeHtml(event.calendar_name || '')}"><i class="bi bi-link-45deg"></i> Aliased</span>`;
+        }
+
         let messageHtml = '';
         if (event.message && event.ldap_valid) {
             const messageData = event.message_data || {};
             const isGenerated = messageData.message && !messageData.fallback;
             const historicalFact = messageData.historical_fact;
-            
+
             messageHtml = `
                 <div class="birthday-event-message mt-2">
                     <div class="d-flex justify-content-between align-items-start">
@@ -422,13 +440,13 @@ class EnhancedBirthdayManager extends BirthdayManager {
                             </div>
                         </div>
                         <div class="btn-group ms-2">
-                            <button class="btn btn-sm btn-outline-primary" 
+                            <button class="btn btn-sm btn-outline-primary"
                                     onclick="editMessage('${this.escapeHtml(event.name)}', '${event.date}')"
                                     title="Edit message">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             ${isGenerated ? `
-                                <button class="btn btn-sm btn-outline-secondary" 
+                                <button class="btn btn-sm btn-outline-secondary"
                                         onclick="regenerateMessage('${this.escapeHtml(event.name)}', '${event.date}')"
                                         title="Regenerate message">
                                     <i class="bi bi-arrow-clockwise"></i>
@@ -439,10 +457,10 @@ class EnhancedBirthdayManager extends BirthdayManager {
                 </div>
             `;
         }
-        
+
         return `
             <div class="birthday-event" data-name="${this.escapeHtml(event.name)}" data-date="${event.date}">
-                <div class="birthday-event-name">${this.escapeHtml(event.name)}</div>
+                <div class="birthday-event-name">${this.escapeHtml(event.name)}${aliasIndicator}</div>
                 <div class="birthday-event-details">
                     <strong>Event:</strong> ${this.escapeHtml(event.summary)}
                 </div>
@@ -745,14 +763,194 @@ async function saveEditedMessage(name, date) {
     }
 }
 
+// =============================================================================
+// Alias Management Functions
+// =============================================================================
+
+async function showAliasModal() {
+    await loadAliases();
+    const modal = new bootstrap.Modal(document.getElementById('aliasModal'));
+    modal.show();
+}
+
+async function loadAliases() {
+    try {
+        const response = await fetch('/api/aliases');
+        const data = await response.json();
+
+        const tbody = document.getElementById('aliasTableBody');
+
+        if (!data.aliases || Object.keys(data.aliases).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No aliases configured</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (const [calendarName, alias] of Object.entries(data.aliases)) {
+            const escapedCalendarName = calendarName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            html += `
+                <tr data-calendar-name="${calendarName.replace(/"/g, '&quot;')}">
+                    <td><code>${escapeHtml(calendarName)}</code></td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm alias-display-name"
+                               value="${escapeHtml(alias.display_name)}">
+                    </td>
+                    <td><code>${escapeHtml(alias.ldap_uid)}</code></td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm alias-notes"
+                               value="${escapeHtml(alias.notes || '')}" placeholder="Notes">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="updateAlias('${escapedCalendarName}')" title="Save">
+                            <i class="bi bi-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAlias('${escapedCalendarName}')" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading aliases:', error);
+        document.getElementById('aliasTableBody').innerHTML =
+            '<tr><td colspan="5" class="text-center text-danger py-3">Error loading aliases</td></tr>';
+    }
+}
+
+async function addAlias() {
+    const calendarName = document.getElementById('newCalendarName').value.trim();
+    const displayName = document.getElementById('newDisplayName').value.trim();
+    const notes = document.getElementById('newAliasNotes').value.trim();
+
+    if (!calendarName || !displayName) {
+        alert('Please enter both calendar name and display name');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/aliases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ calendar_name: calendarName, display_name: displayName, notes })
+        });
+
+        if (response.ok) {
+            // Clear form
+            document.getElementById('newCalendarName').value = '';
+            document.getElementById('newDisplayName').value = '';
+            document.getElementById('newAliasNotes').value = '';
+            document.getElementById('ldapUidPreview').textContent = '-';
+            // Reload aliases and birthday data
+            await loadAliases();
+            if (typeof birthdayApp !== 'undefined' && birthdayApp.loadBirthdayData) {
+                birthdayApp.loadBirthdayData();
+            }
+        } else {
+            const error = await response.json();
+            alert('Failed to add alias: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error adding alias:', error);
+        alert('Failed to add alias');
+    }
+}
+
+async function updateAlias(calendarName) {
+    const row = document.querySelector(`tr[data-calendar-name="${calendarName}"]`);
+    if (!row) {
+        console.error('Row not found for:', calendarName);
+        return;
+    }
+
+    const displayName = row.querySelector('.alias-display-name').value.trim();
+    const notes = row.querySelector('.alias-notes').value.trim();
+
+    if (!displayName) {
+        alert('Display name cannot be empty');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/aliases/${encodeURIComponent(calendarName)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ display_name: displayName, notes })
+        });
+
+        if (response.ok) {
+            await loadAliases();
+            if (typeof birthdayApp !== 'undefined' && birthdayApp.loadBirthdayData) {
+                birthdayApp.loadBirthdayData();
+            }
+        } else {
+            const error = await response.json();
+            alert('Failed to update alias: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error updating alias:', error);
+        alert('Failed to update alias');
+    }
+}
+
+async function deleteAlias(calendarName) {
+    if (!confirm(`Delete alias for "${calendarName}"?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/aliases/${encodeURIComponent(calendarName)}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadAliases();
+            if (typeof birthdayApp !== 'undefined' && birthdayApp.loadBirthdayData) {
+                birthdayApp.loadBirthdayData();
+            }
+        } else {
+            const error = await response.json();
+            alert('Failed to delete alias: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error deleting alias:', error);
+        alert('Failed to delete alias');
+    }
+}
+
+// Helper for escaping HTML (if not already defined)
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// LDAP UID preview as user types
+document.addEventListener('DOMContentLoaded', function() {
+    const displayNameInput = document.getElementById('newDisplayName');
+    if (displayNameInput) {
+        displayNameInput.addEventListener('input', function() {
+            const preview = document.getElementById('ldapUidPreview');
+            if (this.value.trim()) {
+                preview.textContent = this.value.trim().replace(/ /g, '.').toLowerCase();
+            } else {
+                preview.textContent = '-';
+            }
+        });
+    }
+});
+
 // Override the global birthday manager with enhanced version
 document.addEventListener('DOMContentLoaded', function() {
     // Replace with enhanced manager
     window.birthdayManager = new EnhancedBirthdayManager();
-    
+
     // Start auto-refresh (1 hour intervals)
     window.birthdayManager.startAutoRefresh(60);
-    
+
     // Add manual refresh button functionality
     const refreshButton = document.getElementById('refresh-birthdays-btn');
     if (refreshButton) {
@@ -760,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.birthdayManager.refreshBirthdayData();
         });
     }
-    
+
     // Add refresh controls to the page if not present
     const controlsContainer = document.querySelector('.controls-container') || document.querySelector('.card-body');
     if (controlsContainer && !document.getElementById('refresh-controls')) {
@@ -775,16 +973,16 @@ document.addEventListener('DOMContentLoaded', function() {
             <small class="text-muted">(Auto-refreshes hourly)</small>
         `;
         controlsContainer.appendChild(refreshControls);
-        
+
         // Add event listener to the newly created button
         document.getElementById('refresh-birthdays-btn').addEventListener('click', () => {
             window.birthdayManager.refreshBirthdayData();
         });
     }
-    
+
     // Update the initial refresh time
     window.birthdayManager.updateLastRefreshDisplay();
-    
+
     console.log('Birthday Bot Dashboard with OpenAI support initialized');
     console.log('Auto-refresh enabled: data will update every 60 minutes without disrupting edits');
 });

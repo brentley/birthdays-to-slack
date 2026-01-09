@@ -58,9 +58,6 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_SCOPE=birthdays-to-slack
-      - REPO_USER=${REPO_USER}
-      - REPO_PASS=${REPO_PASS}
-    # Watchtower API disabled - no ports exposed
     command: --interval 30 --scope birthdays-to-slack
     labels:
       - "com.centurylinklabs.watchtower.scope=birthdays-to-slack"

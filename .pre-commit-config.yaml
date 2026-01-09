@@ -1,0 +1,66 @@
+# Pre-commit hooks to prevent secrets from being committed
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Trufflehog - Scan for secrets
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.63.0
+    hooks:
+      - id: trufflehog
+        name: Trufflehog Secret Scanner
+        args:
+          - --no-update
+          - --fail
+        stages: [commit]
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+      # Validate JSON files
+      - id: check-json
+
+      # Validate YAML files
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom YAML tags in docker-compose
+
+      # Detect private keys (SSH, PGP, etc.)
+      - id: detect-private-key
+
+      # Fix end of files
+      - id: end-of-file-fixer
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+
+      # Check for case conflicts on case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Prevent committing directly to main/master
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master']
+
+  # Python-specific hooks
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Format Python code with Black
+        language_version: python3.10
+
+  # Detect secrets in code (additional layer)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hardcoded secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package.lock.json

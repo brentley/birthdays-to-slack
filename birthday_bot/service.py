@@ -10,17 +10,22 @@ import logging
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 from birthday_bot.message_generator import MessageGenerator
+from birthday_bot.alias_manager import AliasManager
 
 logger = logging.getLogger(__name__)
 
 class BirthdayService:
-    def __init__(self, ics_url: str, webhook_url: str, ldap_server: str, search_base: str, 
-                 openai_api_key: Optional[str] = None):
+    def __init__(self, ics_url: str, webhook_url: str, ldap_server: str, search_base: str,
+                 openai_api_key: Optional[str] = None, data_dir: str = "data"):
         self.ics_url = ics_url
         self.webhook_url = webhook_url
         self.ldap_server = ldap_server
         self.search_base = search_base
-        
+
+        # Initialize AliasManager
+        self.alias_manager = AliasManager(data_dir=data_dir)
+        logger.info("AliasManager initialized")
+
         # Initialize message generator if OpenAI key is provided
         self.message_generator = None
         if openai_api_key:
@@ -61,34 +66,42 @@ class BirthdayService:
                         event_summary = component.get('summary')
                         if '-' in str(event_summary):
                             full_name = str(event_summary).split('-')[0].strip()
-                            
-                            # Check LDAP validation
-                            ldap_valid = self.verify_person_in_ldap(full_name)
-                            
+
+                            # Apply alias if exists
+                            calendar_name = full_name  # Store original calendar name
+                            display_name = self.alias_manager.get_display_name(calendar_name)
+                            ldap_uid = self.alias_manager.get_ldap_uid(calendar_name)
+                            has_alias = self.alias_manager.has_alias(calendar_name)
+
+                            # Check LDAP validation with the correct uid
+                            ldap_valid = self.verify_person_in_ldap(display_name, ldap_uid)
+
                             # Generate or get message
                             message_data = None
                             if ldap_valid and self.message_generator:
                                 try:
                                     message_data = self.message_generator.generate_message(
-                                        full_name, target_date
+                                        display_name, target_date
                                     )
                                 except Exception as e:
-                                    logger.error(f"Failed to generate message for {full_name}: {e}")
-                            
+                                    logger.error(f"Failed to generate message for {display_name}: {e}")
+
                             # Use generated message or fallback
                             if message_data and not message_data.get('error'):
                                 message = message_data['message']
                             else:
-                                message = f":birthday: Happy Birthday {full_name}! :tada:" if ldap_valid else None
-                            
+                                message = f":birthday: Happy Birthday {display_name}! :tada:" if ldap_valid else None
+
                             event_data = {
-                                'name': full_name,
+                                'name': display_name,
                                 'summary': str(event_summary),
                                 'date': target_date.isoformat(),
                                 'ldap_valid': ldap_valid,
                                 'will_send': ldap_valid,  # Only send if LDAP valid
                                 'message': message,
-                                'message_data': message_data  # Include full message data for UI
+                                'message_data': message_data,  # Include full message data for UI
+                                'calendar_name': calendar_name,
+                                'has_alias': has_alias
                             }
                             events.append(event_data)
 
@@ -99,11 +112,13 @@ class BirthdayService:
             logger.error(f"Error getting birthday events for {target_date}: {e}")
             return []
 
-    def verify_person_in_ldap(self, full_name: str) -> bool:
+    def verify_person_in_ldap(self, full_name: str, ldap_uid: Optional[str] = None) -> bool:
         """Verify if a person exists in LDAP"""
         try:
-            first_last = full_name.replace(' ', '.').lower()
-            search_filter = f"(uid={first_last})"
+            # Use provided ldap_uid if given, otherwise derive from full_name
+            if ldap_uid is None:
+                ldap_uid = full_name.replace(' ', '.').lower()
+            search_filter = f"(uid={ldap_uid})"
             
             # Use TLS for secure connection
             tls_configuration = Tls(
@@ -124,7 +139,7 @@ class BirthdayService:
                 )
                 
                 found = len(conn.entries) > 0
-                logger.debug(f"LDAP verification for '{full_name}' ({first_last}): {'found' if found else 'not found'}")
+                logger.debug(f"LDAP verification for '{full_name}' ({ldap_uid}): {'found' if found else 'not found'}")
                 return found
                 
         except Exception as e:
@@ -234,16 +249,32 @@ class BirthdayService:
             'search_base_configured': bool(self.search_base),
             'openai_configured': bool(self.message_generator)
         }
-    
+
     def update_message(self, employee_name: str, birthday_date: date, new_message: str) -> bool:
         """Update a birthday message for a specific employee."""
         if not self.message_generator:
             logger.error("Message generator not initialized")
             return False
-        
+
         try:
             # Update the message in the generator
             return self.message_generator.update_message(employee_name, birthday_date, new_message)
         except Exception as e:
             logger.error(f"Failed to update message for {employee_name}: {e}")
             return False
+
+    def get_aliases(self) -> Dict[str, Any]:
+        """Get all aliases."""
+        return self.alias_manager.get_all_aliases()
+
+    def add_alias(self, calendar_name: str, display_name: str, notes: str = "") -> Dict[str, Any]:
+        """Add a new alias."""
+        return self.alias_manager.add_alias(calendar_name, display_name, notes)
+
+    def update_alias(self, calendar_name: str, display_name: str, notes: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Update an alias."""
+        return self.alias_manager.update_alias(calendar_name, display_name, notes)
+
+    def delete_alias(self, calendar_name: str) -> bool:
+        """Delete an alias."""
+        return self.alias_manager.delete_alias(calendar_name)
