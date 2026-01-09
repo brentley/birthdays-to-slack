@@ -2,31 +2,7 @@
 
 // Note: This file expects app.js to be loaded first in the HTML
 
-// VisiQuate standard time formatting function (if not already defined)
-if (typeof formatTime === 'undefined') {
-    window.formatTime = (timestamp) => {
-        const date = new Date(timestamp);
-        return date.toLocaleString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZoneName: 'short'
-        });
-    };
-}
-
-// VisiQuate standard time formatting function
-const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-};
+// Note: formatTime is defined in app.js which must be loaded first
 
 // Extended BirthdayManager for OpenAI features
 class EnhancedBirthdayManager extends BirthdayManager {
