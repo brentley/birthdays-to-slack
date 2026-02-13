@@ -416,6 +416,11 @@ class EnhancedBirthdayManager extends BirthdayManager {
                             </div>
                         </div>
                         <div class="btn-group ms-2">
+                            <button class="btn btn-sm btn-outline-success"
+                                    onclick="sendToSlack('${this.escapeHtml(event.name)}', '${event.date}')"
+                                    title="Send to Slack">
+                                <i class="bi bi-send"></i>
+                            </button>
                             <button class="btn btn-sm btn-outline-primary"
                                     onclick="editMessage('${this.escapeHtml(event.name)}', '${event.date}')"
                                     title="Edit message">
@@ -555,6 +560,66 @@ async function regenerateMessage(name, date) {
         console.error('Error regenerating message:', error);
         alert('Failed to regenerate message');
         loadBirthdayData(); // Reload to restore original state
+    }
+}
+
+// Send message to Slack
+async function sendToSlack(name, date) {
+    // Get the current message text
+    const nameId = name.replace(/\s+/g, '-');
+    const messageDiv = document.getElementById(`message-${nameId}-${date}`);
+
+    if (!messageDiv) {
+        alert('Could not find message to send');
+        return;
+    }
+
+    const message = messageDiv.textContent.trim();
+    if (!message) {
+        alert('No message to send');
+        return;
+    }
+
+    if (!confirm(`Send birthday message for ${name} to Slack?`)) {
+        return;
+    }
+
+    // Show loading state on the button
+    const eventElement = document.querySelector(`[data-name="${name}"][data-date="${date}"]`);
+    let sendBtn = null;
+    if (eventElement) {
+        sendBtn = eventElement.querySelector('.btn-outline-success');
+        if (sendBtn) {
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            sendBtn.disabled = true;
+        }
+    }
+
+    try {
+        const response = await fetch('/api/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, date, message })
+        });
+
+        if (response.ok) {
+            showNotification(`Birthday message for ${name} sent to Slack!`, 'success');
+            // Reload to update sent status
+            loadBirthdayData();
+        } else {
+            const error = await response.json();
+            alert('Failed to send message: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error sending message to Slack:', error);
+        alert('Failed to send message to Slack');
+    } finally {
+        if (sendBtn) {
+            sendBtn.innerHTML = '<i class="bi bi-send"></i>';
+            sendBtn.disabled = false;
+        }
     }
 }
 

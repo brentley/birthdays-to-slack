@@ -191,6 +191,21 @@ class BirthdayService:
         response.raise_for_status()
         logger.info(f"Slack message sent: {message}")
 
+    def send_single_message(self, employee_name: str, birthday_date: date, message: str) -> bool:
+        """Send a single birthday message to Slack for a specific person."""
+        try:
+            self.send_slack_message(message)
+
+            # Mark message as sent
+            if self.message_generator:
+                self.message_generator.mark_message_sent(employee_name, birthday_date, message)
+
+            logger.info(f"Manually sent birthday message for {employee_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to manually send birthday message for {employee_name}: {e}")
+            raise
+
     def regenerate_message(self, employee_name: str, birthday_date: date) -> Optional[Dict[str, Any]]:
         """Regenerate a birthday message for an employee."""
         if not self.message_generator:

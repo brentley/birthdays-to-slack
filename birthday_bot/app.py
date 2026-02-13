@@ -325,6 +325,34 @@ def api_clear_sent_tracking():
         logger.error(f"Failed to clear sent tracking: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/send-message', methods=['POST'])
+def api_send_message():
+    """API endpoint to send a birthday message to Slack"""
+    if not birthday_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+
+    data = request.get_json()
+    if not data or 'name' not in data or 'date' not in data or 'message' not in data:
+        return jsonify({'error': 'Missing name, date, or message'}), 400
+
+    try:
+        birthday_date = datetime.fromisoformat(data['date']).date()
+        message = data['message'].strip()
+
+        if not message:
+            return jsonify({'error': 'Message cannot be empty'}), 400
+
+        birthday_service.send_single_message(data['name'], birthday_date, message)
+
+        # Update cache to reflect sent status
+        update_birthday_cache()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error sending message: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/update-message', methods=['POST'])
 def api_update_message():
     """API endpoint to update a birthday message"""
